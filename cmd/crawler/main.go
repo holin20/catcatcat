@@ -10,7 +10,7 @@ import (
 func main() {
 	price, err := costco.FetchMacbookPrice()
 	if ezgo.IsErr(err) {
-		fmt.Println(ezgo.NewCause(err, "FetchMacbookPrice"))
+		ezgo.PrintCauses(err, "FetchMacbookPrice")
 		return
 	}
 	fmt.Println(price)

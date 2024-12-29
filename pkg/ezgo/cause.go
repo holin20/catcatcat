@@ -65,12 +65,17 @@ func (c *cause) buildRootCausingString() string {
 		causesStr = append(causesStr, cause.msg)
 	}
 	return fmt.Sprintf(
-		"Root Cause: \"%s\" { Causes: %s }",
+		"Error: %s | Root Cause: %s | Causes: %s",
+		causes[0].msg,
 		IfLazy(
 			rootCause.err != nil,
 			func() string { return rootCause.err.Error() },
 			func() string { return "[No Root Cause]" },
 		),
-		strings.Join(causesStr, " <- "),
+		strings.Join(causesStr[1:], " <- "),
 	)
+}
+
+func PrintCauses(err error, msgFmt string, args ...any) {
+	fmt.Println(NewCause(err, msgFmt, args...))
 }

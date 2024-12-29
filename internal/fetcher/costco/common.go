@@ -11,9 +11,10 @@ func FetchMacbookPrice() (float64, error) {
 		return 0, ezgo.NewCause(err, "HttpCall")
 	}
 
-	price, err := ezgo.GetFloatFromJSONPath(string(body), "finalOnlinePrice")
+	priceField := "finalOnlinePrice"
+	price, err := ezgo.GetFloatFromJSONPath(string(body), priceField)
 	if ezgo.IsErr(err) {
-		return 0, ezgo.NewCause(err, "GetFloatFromJSONPath")
+		return 0, ezgo.NewCause(err, "GetFloatFromJSONPath(%s)", priceField)
 	}
 
 	return price, nil
