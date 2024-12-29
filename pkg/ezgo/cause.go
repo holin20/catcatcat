@@ -3,6 +3,8 @@ package ezgo
 import (
 	"fmt"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 type cause struct {
@@ -13,17 +15,25 @@ type cause struct {
 	err         error
 }
 
-func NewCause(err error, msgFmt string, args ...any) *cause {
+func NewCausef(err error, msgFmt string, args ...any) *cause {
+	return NewCause(err, fmt.Sprintf(msgFmt, args...))
+}
+
+func NewCause(err error, msg string) *cause {
 	if c, ok := err.(*cause); ok && c != nil {
 		return &cause{
-			msg:         fmt.Sprintf(msgFmt, args...),
+			msg:         msg,
 			directCause: c,
 		}
 	}
 	return &cause{
-		msg: fmt.Sprintf(msgFmt, args...),
+		msg: msg,
 		err: err,
 	}
+}
+
+func (c *cause) String() string {
+	return c.Error()
 }
 
 func (c *cause) Error() string {
@@ -76,6 +86,12 @@ func (c *cause) buildRootCausingString() string {
 	)
 }
 
-func PrintCauses(err error, msgFmt string, args ...any) {
-	fmt.Println(NewCause(err, msgFmt, args...))
+func LogCauses(logger *zap.Logger, err error, msgFmt string, args ...any) {
+	causes, rootCause := NewCausef(err, msgFmt, args...).Traceback()
+	var causesStr []string
+	for _, cause := range causes {
+		causesStr = append(causesStr, cause.msg)
+	}
+
+	logger.Error(causes[0].msg, zap.Error(rootCause.err), zap.String("backtrace", strings.Join(causesStr, " <- ")))
 }

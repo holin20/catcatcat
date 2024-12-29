@@ -7,10 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var gScope *Scope = Must(NewScopeWithDefaultLogger())
+
 func TestCause(t *testing.T) {
 	// This test is not yet implemented.
 	err := NewCause(origin(), "origin")
-	fmt.Println(err)
+	LogCauses(gScope.GetLogger(), err, "TestCauses")
 	assert.False(t, true)
 }
 

@@ -8,6 +8,11 @@ func Arg2[T1, T2, Trest any](arg1 T1, arg2 T2, args ...Trest) T2 {
 	return arg2
 }
 
+func Must[T any](v T, err error) T {
+	AssertNoError(err, "Must")
+	return v
+}
+
 func In[T comparable](item T, items ...T) bool {
 	for _, i := range items {
 		if i == item {

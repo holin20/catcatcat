@@ -1,17 +1,25 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/holin20/catcatcat/internal/fetcher/costco"
 	"github.com/holin20/catcatcat/pkg/ezgo"
+
+	"go.uber.org/zap"
 )
 
 func main() {
+	scope := ezgo.Must(ezgo.NewScopeWithDefaultLogger())
+	defer scope.Close()
+
+	run(scope)
+}
+
+func run(scope *ezgo.Scope) {
 	price, err := costco.FetchMacbookPrice()
 	if ezgo.IsErr(err) {
-		ezgo.PrintCauses(err, "FetchMacbookPrice")
+		ezgo.LogCauses(scope.GetLogger(), err, "FetchMacbookPrice")
 		return
 	}
-	fmt.Println(price)
+
+	scope.GetLogger().Info("Price", zap.Float64("price", price))
 }
