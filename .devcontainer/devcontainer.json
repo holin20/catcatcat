@@ -10,7 +10,18 @@
 	},
 	"features": {
 		"ghcr.io/devcontainers/features/go:1": {}
-	}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go" // VS Code Go extension
+			]
+		}
+	},
+	"mounts": [
+		"source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind",
+		"source=${localEnv:HOME}/.gitconfig,target=/root/.gitconfig,type=bind"
+	],
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
@@ -19,7 +30,7 @@
 	// "forwardPorts": [],
 
 	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "cat /etc/os-release",
+	"postCreateCommand": "apt-get update && apt-get install -y vim"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
