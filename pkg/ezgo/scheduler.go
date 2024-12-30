@@ -36,19 +36,21 @@ func NewUnnamedTask(fn func()) *task {
 
 // Scheduler
 
-type scheduler struct {
-	scope *Scope
-	wg    *sync.WaitGroup
+type Scheduler struct {
+	scope    *Scope
+	wg       *sync.WaitGroup
+	doneChan chan struct{}
 }
 
-func NewScheduler(scope *Scope) *scheduler {
-	return &scheduler{
-		scope: scope,
-		wg:    &sync.WaitGroup{},
+func NewScheduler(scope *Scope) *Scheduler {
+	return &Scheduler{
+		scope:    scope.WithLogger(scope.GetLogger().Named("Scheduler")),
+		wg:       &sync.WaitGroup{},
+		doneChan: make(chan struct{}),
 	}
 }
 
-func (s *scheduler) Repeat(
+func (s *Scheduler) Repeat(
 	ctx context.Context,
 	interval time.Duration,
 	task *task,
@@ -56,7 +58,7 @@ func (s *scheduler) Repeat(
 	s.RepeatN(ctx, interval, -1, task)
 }
 
-func (s *scheduler) RepeatN(
+func (s *Scheduler) RepeatN(
 	ctx context.Context,
 	interval time.Duration,
 	repeat int64, // negative number means infinite
@@ -64,6 +66,7 @@ func (s *scheduler) RepeatN(
 ) {
 	ticker := time.NewTicker(interval)
 	remaining := repeat
+	seq := 0
 	s.wg.Add(1)
 	go func() {
 		defer ticker.Stop()
@@ -73,9 +76,11 @@ func (s *scheduler) RepeatN(
 				return
 			}
 			remaining--
+			seq++
 			s.scope.GetLogger().Info(
 				"Running periodic task",
 				zap.String("task", task.GetName()),
+				zap.Int("seq", seq),
 				If(repeat < 0, zap.Skip(), zap.Int64("repeat", repeat)),
 				If(repeat < 0, zap.Skip(), zap.Int64("remaining", remaining)),
 			)
@@ -86,13 +91,17 @@ func (s *scheduler) RepeatN(
 			case <-ticker.C:
 				continue
 			case <-ctx.Done():
+				s.scope.GetLogger().Debug("Received ctx.Done() in RepeatN")
+				return
+			case <-s.doneChan:
+				s.scope.GetLogger().Debug("Received doneChan in RepeatN")
 				return
 			}
 		}
 	}()
 }
 
-func (s *scheduler) Once(
+func (s *Scheduler) Once(
 	ctx context.Context,
 	after time.Duration,
 	task *task,
@@ -102,13 +111,26 @@ func (s *scheduler) Once(
 		defer s.wg.Done()
 		select {
 		case <-time.After(after):
+			s.scope.GetLogger().Info("Running one-off task", zap.String("task", task.GetName()))
 			task.Run()
 		case <-ctx.Done():
+			s.scope.GetLogger().Debug("Received ctx.Done() in Once")
+			return
+		case <-s.doneChan:
+			s.scope.GetLogger().Debug("Received doneChan in Once")
 			return
 		}
 	}()
 }
 
-func (s *scheduler) Join() {
-	s.wg.Wait()
+func (s *Scheduler) Terminate() *Awaitable {
+	awaitable, signal := NewAwaitable()
+	go func() {
+		defer signal()
+		s.wg.Wait()
+	}()
+
+	s.doneChan <- struct{}{}
+
+	return awaitable
 }

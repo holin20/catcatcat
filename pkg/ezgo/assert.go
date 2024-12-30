@@ -4,11 +4,22 @@ import (
 	"fmt"
 )
 
-func AssertNotNil[T any](p *T, msg string) {
-	if p != nil {
+func Assert(cond bool, msg string) {
+	if cond {
 		return
 	}
 	Fatal(msg)
+}
+
+func Assertf(cond bool, msgFmt string, args ...any) {
+	if cond {
+		return
+	}
+	Fatal(fmt.Sprintf(msgFmt, args...))
+}
+
+func AssertNotNil[T any](p *T, msg string) {
+	Assert(p != nil, msg)
 }
 
 func AssertNotNilf[T any](p *T, msgFmt string, args ...any) {
