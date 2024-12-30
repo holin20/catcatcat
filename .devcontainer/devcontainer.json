@@ -30,7 +30,7 @@
 	// "forwardPorts": [],
 
 	// Uncomment the next line to run commands after the container is created.
-	"postCreateCommand": "apt-get update && apt-get install -y vim"
+	"postCreateCommand": "apt-get update && apt-get install -y vim && apt-get install -y jq"
 
 	// Configure tool-specific properties.
 	// "customizations": {},
