@@ -15,9 +15,10 @@ type Crawler struct {
 }
 
 func NewCrawler(scope *ezgo.Scope) *Crawler {
+	scope = scope.WithLogger(scope.GetLogger().Named("Crawler"))
 	return &Crawler{
 		scheduler: ezgo.NewScheduler(scope),
-		scope:     scope.WithLogger(scope.GetLogger().Named("Crawler")),
+		scope:     scope,
 	}
 }
 

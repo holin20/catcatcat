@@ -3,14 +3,16 @@ package ezgo
 import "go.uber.org/zap"
 
 type Scope struct {
-	loggers []*zap.Logger
+	parent *Scope
+	// properties of this scope that is immutable
+	logger *zap.Logger
 }
 
 func NewScope(
 	logger *zap.Logger,
 ) *Scope {
 	return &Scope{
-		loggers: []*zap.Logger{logger},
+		logger: logger,
 	}
 }
 
@@ -23,21 +25,30 @@ func NewScopeWithDefaultLogger() (*Scope, error) {
 }
 
 func (s *Scope) GetLogger() *zap.Logger {
-	return lastElelemt(s.loggers, "logger")
+	return findFirstNonNilPropoerty(s, "logger", func(s *Scope) *zap.Logger {
+		return s.logger
+	})
 }
 
 func (s *Scope) Close() {
-	for _, logger := range s.loggers {
-		logger.Sync()
+	for ; s != nil; s = s.parent {
+		s.logger.Sync()
 	}
 }
 
 func (s *Scope) WithLogger(logger *zap.Logger) *Scope {
-	s.loggers = append(s.loggers, logger)
-	return s
+	return &Scope{
+		parent: s,
+		logger: logger,
+	}
 }
 
-func lastElelemt[T any](slice []*T, proprty string) *T {
-	Assertf(len(slice) > 0, "No property %s", proprty)
-	return slice[len(slice)-1]
+func findFirstNonNilPropoerty[T any](s *Scope, propertyName string, getProperty func(*Scope) *T) *T {
+	for ; s != nil; s = s.parent {
+		if p := getProperty(s); p != nil {
+			return p
+		}
+	}
+	AssertAlwaysf("Nil property %s", propertyName)
+	return nil
 }

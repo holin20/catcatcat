@@ -18,6 +18,14 @@ func Assertf(cond bool, msgFmt string, args ...any) {
 	Fatal(fmt.Sprintf(msgFmt, args...))
 }
 
+func AssertAlways(msg string) {
+	Assert(false, msg)
+}
+
+func AssertAlwaysf(msgFmt string, args ...any) {
+	AssertAlways(fmt.Sprintf(msgFmt, args...))
+}
+
 func AssertNotNil[T any](p *T, msg string) {
 	Assert(p != nil, msg)
 }
