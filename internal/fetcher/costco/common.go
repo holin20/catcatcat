@@ -2,19 +2,39 @@ package costco
 
 import (
 	"github.com/holin20/catcatcat/pkg/ezgo"
+	"github.com/tidwall/gjson"
 )
 
-func FetchItemPrice(url string) (float64, error) {
+func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
+	priceResult, errP := fetchJsonPath(priceUrl, "finalOnlinePrice")
+	hasInvResult, errI := fetchJsonPath(inventroyUrl, "invAvailable")
+
+	var price float64
+	var hasInv bool
+	if priceResult != nil {
+		price = priceResult.Float()
+	}
+	if hasInvResult != nil {
+		hasInv = hasInvResult.Bool()
+	}
+
+	return price, hasInv, ezgo.If(
+		ezgo.IsErr(errI) && ezgo.IsErr(errP),
+		ezgo.NewCause(errI, "fetchJsonPath.finalOnlinePrice"),
+		nil,
+	)
+}
+
+func fetchJsonPath(url string, path string) (*gjson.Result, error) {
 	body, err := ezgo.NewHttpClient().WithDefaultUserAgent().Get(url)
 	if ezgo.IsErr(err) {
-		return 0, ezgo.NewCause(err, "HttpCall")
+		return nil, ezgo.NewCausef(err, "HttpCall(%s)", url)
 	}
 
-	priceField := "finalOnlinePrice"
-	price, err := ezgo.GetFloatFromJSONPath(string(body), priceField)
+	result, err := ezgo.ExtractJsonPath(string(body), path)
 	if ezgo.IsErr(err) {
-		return 0, ezgo.NewCausef(err, "GetFloatFromJSONPath(%s, %s)", body, priceField)
+		return nil, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", body, path)
 	}
 
-	return price, nil
+	return result, nil
 }

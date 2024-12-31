@@ -1,6 +1,9 @@
 package ezgo
 
 func IsErr(err error) bool {
+	if c, ok := err.(*cause); ok {
+		return c != nil
+	}
 	return err != nil
 }
 

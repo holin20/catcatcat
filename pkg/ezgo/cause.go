@@ -20,6 +20,10 @@ func NewCausef(err error, msgFmt string, args ...any) *cause {
 }
 
 func NewCause(err error, msg string) *cause {
+	if err == nil {
+		return nil
+	}
+
 	if c, ok := err.(*cause); ok && c != nil {
 		return &cause{
 			msg:         msg,

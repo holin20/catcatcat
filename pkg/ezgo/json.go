@@ -6,13 +6,13 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-func GetValueFromJSONPath(jsonStr string, jsonPath string) (interface{}, error) {
+func ExtractJsonPath(jsonStr string, jsonPath string) (*gjson.Result, error) {
 	result := gjson.Get(jsonStr, jsonPath)
 	if !result.Exists() {
 		return nil, fmt.Errorf("error looking up JSON path: %v", jsonPath)
 	}
 
-	return result.Value(), nil
+	return &result, nil
 }
 
 func GetFloatFromJSONPath(jsonStr string, jsonPath string) (float64, error) {
