@@ -17,7 +17,8 @@ func main() {
 	crawler := crawler.NewCrawler(scope)
 	crawler.Start(ctx)
 
-	time.Sleep(60 * time.Second)
+	time.Sleep(20 * time.Second)
 
+	//	cancel()
 	crawler.Terminate().Await()
 }

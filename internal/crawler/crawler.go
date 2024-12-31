@@ -85,5 +85,5 @@ func (c *Crawler) Start(ctx context.Context) {
 }
 
 func (c *Crawler) Terminate() *ezgo.Awaitable {
-	return c.scheduler.Terminate()
+	return ezgo.Async(c.scheduler.Terminate)
 }

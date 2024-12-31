@@ -69,8 +69,10 @@ func (s *Scheduler) RepeatN(
 	seq := 0
 	s.wg.Add(1)
 	go func() {
-		defer ticker.Stop()
-		defer s.wg.Done()
+		defer func() {
+			s.wg.Done()
+			ticker.Stop()
+		}()
 		for {
 			if remaining == 0 {
 				return
@@ -91,10 +93,10 @@ func (s *Scheduler) RepeatN(
 			case <-ticker.C:
 				continue
 			case <-ctx.Done():
-				s.scope.GetLogger().Debug("Received ctx.Done() in RepeatN")
+				s.scope.GetLogger().Info("Received ctx.Done() in RepeatN")
 				return
 			case <-s.doneChan:
-				s.scope.GetLogger().Debug("Received doneChan in RepeatN")
+				s.scope.GetLogger().Info("Received doneChan in RepeatN")
 				return
 			}
 		}
@@ -114,23 +116,17 @@ func (s *Scheduler) Once(
 			s.scope.GetLogger().Info("Running one-off task", zap.String("task", task.GetName()))
 			task.Run()
 		case <-ctx.Done():
-			s.scope.GetLogger().Debug("Received ctx.Done() in Once")
+			s.scope.GetLogger().Info("Received ctx.Done() in Once")
 			return
 		case <-s.doneChan:
-			s.scope.GetLogger().Debug("Received doneChan in Once")
+			s.scope.GetLogger().Info("Received doneChan in Once")
 			return
 		}
 	}()
 }
 
-func (s *Scheduler) Terminate() *Awaitable {
-	awaitable, signal := NewAwaitable()
-	go func() {
-		defer signal()
-		s.wg.Wait()
-	}()
-
-	s.doneChan <- struct{}{}
-
-	return awaitable
+func (s *Scheduler) Terminate() {
+	close(s.doneChan)
+	s.wg.Wait()
+	s.scope.GetLogger().Info("Terminated")
 }
