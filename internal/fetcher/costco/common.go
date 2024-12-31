@@ -5,7 +5,16 @@ import (
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
 	"github.com/tidwall/gjson"
+	"go.uber.org/zap"
 )
+
+type ItemModel struct {
+	ItemId     string
+	ProductId  string
+	CategoryId string
+	Available  bool
+	Price      float64
+}
 
 func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 	priceResult, errP := fetchJsonPath(priceUrl, "finalOnlinePrice")
@@ -27,6 +36,40 @@ func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 	)
 }
 
+func FetchItemModel(
+	scope *ezgo.Scope,
+	itemId string,
+	categoryId string,
+	productId string,
+	queryStringPatch string,
+) (*ItemModel, error) {
+	scope = scope.WithLogger(scope.GetLogger().Named("CostcoFetcher"))
+
+	// fetch price
+	priceUrl := buildGetContractPriceUrl(itemId, categoryId, productId, queryStringPatch)
+	scope.GetLogger().Info("GetContractPriceUrl", zap.String("priceUrl", priceUrl))
+	priceResult, err := fetchJsonPath(priceUrl, "finalOnlinePrice")
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "fetchJsonPath.finalOnlinePrice."+priceUrl)
+	}
+
+	// fetch inventory
+	inventroyUrl := builGetInventoryDetailUrl(itemId, categoryId, productId, queryStringPatch)
+	scope.GetLogger().Info("GetInventoryDetailUrl", zap.String("inventroyUrl", inventroyUrl))
+	hasInvResult, err := fetchJsonPath(inventroyUrl, "invAvailable")
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "fetchJsonPath.invAvailable."+inventroyUrl)
+	}
+
+	return &ItemModel{
+		ItemId:     itemId,
+		CategoryId: categoryId,
+		ProductId:  productId,
+		Price:      priceResult.Float(),
+		Available:  hasInvResult.Bool(),
+	}, nil
+}
+
 func fetchJsonPath(url string, path string) (*gjson.Result, error) {
 	body, err := ezgo.NewHttpClient().
 		WithDefaultUserAgent().
@@ -46,4 +89,36 @@ func fetchJsonPath(url string, path string) (*gjson.Result, error) {
 
 func getCookieString() string {
 	return os.Getenv("CATCATCAT_COSTCO_COOKIE")
+}
+
+func buildGetContractPriceUrl(
+	itemId string,
+	catalogId string,
+	productId string,
+	queryStringPatch string,
+) string {
+	// e.g. https://www.costco.com/AjaxGetContractPrice?itemId=3074457345620439817&catalogId=10701&productId=3074457345620439815
+	return ezgo.NewHttpsUrl("www.costco.com").
+		WithPath("AjaxGetContractPrice").
+		WithQueryParam("itemId", itemId).
+		WithQueryParam("catalogId", catalogId).
+		WithQueryParam("productId", productId).
+		WithQueryStringPatch(queryStringPatch).
+		String()
+}
+
+func builGetInventoryDetailUrl(
+	itemId string,
+	catalogId string,
+	productId string,
+	queryStringPatch string,
+) string {
+	// e.g. https://www.costco.com/AjaxGetContractPrice?itemId=3074457345620439817&catalogId=10701&productId=3074457345620439815
+	return ezgo.NewHttpsUrl("www.costco.com").
+		WithPath("AjaxGetInventoryDetail").
+		WithQueryParam("itemId", itemId).
+		WithQueryParam("catalogId", catalogId).
+		WithQueryParam("productId", productId).
+		WithQueryStringPatch(queryStringPatch).
+		String()
 }
