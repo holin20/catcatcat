@@ -1,3 +1,3 @@
 #!/bin/bash
 
-go run cmd/crawler/main.go 2>&1 | jq .
+go run cmd/crawler/main.go 2>&1 | jq -c 'del(.caller)'

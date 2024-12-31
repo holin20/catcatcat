@@ -1,6 +1,11 @@
 package ezgo
 
-import "go.uber.org/zap"
+import (
+	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
 
 type Scope struct {
 	parent *Scope
@@ -16,12 +21,50 @@ func NewScope(
 	}
 }
 
-func NewScopeWithDefaultLogger() (*Scope, error) {
-	logger, err := zap.NewProduction()
-	if IsErr(err) {
-		return nil, NewCause(err, "NewZapLogger")
+func NewScopeWithDefaultLogger() *Scope {
+	return NewScope(createDefaultLogger())
+}
+
+func createDefaultLogger() *zap.Logger {
+	zap.NewProduction()
+	location, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		panic(err)
 	}
-	return NewScope(logger), nil
+
+	// Custom Time Encoder for PST
+	pstTimeEncoder := func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+		enc.AppendString(t.In(location).Format("2006-01-02 15:04:05"))
+	}
+
+	// Custom encoder config
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:          "ts",
+		LevelKey:         "level",
+		MessageKey:       "msg",
+		NameKey:          "logger",
+		StacktraceKey:    "stacktrace",
+		EncodeTime:       pstTimeEncoder, // Use the custom PST time encoder
+		EncodeLevel:      zapcore.CapitalLevelEncoder,
+		EncodeDuration:   zapcore.StringDurationEncoder,
+		ConsoleSeparator: " | ",
+	}
+
+	config := zap.Config{
+		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
+		Development: false,
+		Sampling: &zap.SamplingConfig{
+			Initial:    100,
+			Thereafter: 100,
+		},
+		//		Encoding:         "console",
+		Encoding:         "json",
+		EncoderConfig:    encoderConfig,
+		OutputPaths:      []string{"stdout", "log.txt"},
+		ErrorOutputPaths: []string{"stderr", "log.txt"},
+	}
+
+	return Must(config.Build())
 }
 
 func (s *Scope) GetLogger() *zap.Logger {

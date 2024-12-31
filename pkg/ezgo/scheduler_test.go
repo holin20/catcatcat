@@ -10,7 +10,7 @@ import (
 )
 
 func TestScheduler(t *testing.T) {
-	scheduler := NewScheduler(Must(NewScopeWithDefaultLogger()))
+	scheduler := NewScheduler(NewScopeWithDefaultLogger())
 
 	ctx, cancel := context.WithCancel(context.Background())
 

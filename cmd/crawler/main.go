@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	scope := ezgo.Must(ezgo.NewScopeWithDefaultLogger())
+	scope := ezgo.NewScopeWithDefaultLogger()
 	defer scope.Close()
 
 	ctx := context.Background()
