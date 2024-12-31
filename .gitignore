@@ -29,3 +29,5 @@ go.work.sum
 
 # Log files
 log.txt
+
+secrets/*

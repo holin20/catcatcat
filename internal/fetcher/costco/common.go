@@ -1,6 +1,8 @@
 package costco
 
 import (
+	"os"
+
 	"github.com/holin20/catcatcat/pkg/ezgo"
 	"github.com/tidwall/gjson"
 )
@@ -26,7 +28,10 @@ func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 }
 
 func fetchJsonPath(url string, path string) (*gjson.Result, error) {
-	body, err := ezgo.NewHttpClient().WithDefaultUserAgent().Get(url)
+	body, err := ezgo.NewHttpClient().
+		WithDefaultUserAgent().
+		SetCookieString(getCookieString()).
+		Get(url)
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCausef(err, "HttpCall(%s)", url)
 	}
@@ -37,4 +42,8 @@ func fetchJsonPath(url string, path string) (*gjson.Result, error) {
 	}
 
 	return result, nil
+}
+
+func getCookieString() string {
+	return os.Getenv("CATCATCAT_COSTCO_COOKIE")
 }

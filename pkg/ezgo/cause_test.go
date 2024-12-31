@@ -12,7 +12,7 @@ var gScope *Scope = NewScopeWithDefaultLogger()
 func TestCause(t *testing.T) {
 	// This test is not yet implemented.
 	err := NewCause(origin(), "origin")
-	LogCauses(gScope.GetLogger(), err, "TestCauses")
+	LogCausesf(gScope.GetLogger(), err, "TestCauses")
 	assert.False(t, true)
 }
 

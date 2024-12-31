@@ -24,8 +24,14 @@ func NewHttpClientWithCustomClient(client *http.Client) *httpClient {
 	}
 }
 
-func (c *httpClient) SetHeader(key, value string) {
+func (c *httpClient) SetHeader(key, value string) *httpClient {
 	c.headers[key] = value
+	return c
+}
+
+func (c *httpClient) SetCookieString(value string) *httpClient {
+	c.headers[headerCookie] = value
+	return c
 }
 
 func (c *httpClient) WithDefaultUserAgent() *httpClient {

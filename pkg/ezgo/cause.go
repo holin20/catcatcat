@@ -90,7 +90,7 @@ func (c *cause) buildRootCausingString() string {
 	)
 }
 
-func LogCauses(logger *zap.Logger, err error, msgFmt string, args ...any) {
+func LogCausesf(logger *zap.Logger, err error, msgFmt string, args ...any) {
 	causes, rootCause := NewCausef(err, msgFmt, args...).Traceback()
 	var causesStr []string
 	for _, cause := range causes {
