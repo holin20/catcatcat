@@ -1,6 +1,7 @@
 package ezgo
 
 import (
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -50,6 +51,8 @@ func createDefaultLogger() *zap.Logger {
 		ConsoleSeparator: " | ",
 	}
 
+	loc, _ := time.LoadLocation("America/Los_Angeles")
+	logFilePath := fmt.Sprintf("logs/%s.txt", time.Now().In(loc).Format("2006-01-02_15-04"))
 	config := zap.Config{
 		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
 		Development: false,
@@ -60,8 +63,8 @@ func createDefaultLogger() *zap.Logger {
 		//		Encoding:         "console",
 		Encoding:         "json",
 		EncoderConfig:    encoderConfig,
-		OutputPaths:      []string{"stdout", "log.txt"},
-		ErrorOutputPaths: []string{"stderr", "log.txt"},
+		OutputPaths:      []string{"stdout", logFilePath},
+		ErrorOutputPaths: []string{"stderr", logFilePath},
 	}
 
 	return Must(config.Build())
