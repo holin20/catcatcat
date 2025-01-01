@@ -56,8 +56,10 @@ func (c *Crawler) Start(ctx context.Context) {
 		item := item
 		interval := item.interval
 		if interval == 0 {
-			interval = 10 * time.Second
+			interval = 5 * time.Minute
 		}
+
+		resultLogger := c.scope.GetLogger().Named("Result")
 		c.scheduler.Repeat(ctx, interval, ezgo.NewNamedTask("Fetch "+item.name, func() {
 			itemModel, err := costco.FetchItemModel(c.scope, item.itemId, item.categoryId, item.productId, item.queryStringPatch)
 			if ezgo.IsErr(err) {
@@ -65,11 +67,11 @@ func (c *Crawler) Start(ctx context.Context) {
 				return
 			}
 
-			c.scope.GetLogger().Info(
+			resultLogger.Info(
 				"Fetched Item Info",
 				zap.String("item", item.name),
 				zap.Float64("price", itemModel.Price),
-				zap.Bool("hasInventory", itemModel.Available),
+				zap.Bool("available", itemModel.Available),
 			)
 		}))
 	}
@@ -84,6 +86,6 @@ func (c *Crawler) Start(ctx context.Context) {
 	// }))
 }
 
-func (c *Crawler) Terminate() *ezgo.Awaitable {
-	return ezgo.Async(c.scheduler.Terminate)
+func (c *Crawler) Terminate() *ezgo.AwaitableVoid {
+	return ezgo.AsyncVoid(c.scheduler.Terminate)
 }

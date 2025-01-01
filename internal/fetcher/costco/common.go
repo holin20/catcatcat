@@ -17,8 +17,13 @@ type ItemModel struct {
 }
 
 func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
-	priceResult, errP := fetchJsonPath(priceUrl, "finalOnlinePrice")
-	hasInvResult, errI := fetchJsonPath(inventroyUrl, "invAvailable")
+	priceArgs, invArgs := ezgo.Await2(
+		ezgo.Async2(ezgo.Bind2_2(fetchJsonPath, priceUrl, "finalOnlinePrice")),
+		ezgo.Async2(ezgo.Bind2_2(fetchJsonPath, inventroyUrl, "invAvailable")),
+	)
+
+	priceResult, priceErr := priceArgs.Unpack()
+	hasInvResult, invErr := invArgs.Unpack()
 
 	var price float64
 	var hasInv bool
@@ -30,8 +35,8 @@ func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 	}
 
 	return price, hasInv, ezgo.If(
-		ezgo.IsErr(errI) && ezgo.IsErr(errP),
-		ezgo.NewCause(errI, "fetchJsonPath.finalOnlinePrice"),
+		ezgo.IsErr(priceErr) && ezgo.IsErr(invErr),
+		ezgo.NewCause(priceErr, "fetchJsonPath.finalOnlinePrice"),
 		nil,
 	)
 }

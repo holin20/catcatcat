@@ -1,13 +1,5 @@
 package ezgo
 
-func Arg1[T1, Trest any](arg1 T1, args ...Trest) T1 {
-	return arg1
-}
-
-func Arg2[T1, T2, Trest any](arg1 T1, arg2 T2, args ...Trest) T2 {
-	return arg2
-}
-
 func Must[T any](v T, err error) T {
 	AssertNoError(err, "Must")
 	return v
