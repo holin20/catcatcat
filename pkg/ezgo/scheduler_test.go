@@ -14,9 +14,9 @@ func TestScheduler(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	scheduler.RepeatN(ctx, 1*time.Second, 5, NewUnnamedTask(func() {
+	scheduler.RepeatN(ctx, 1*time.Second, 5, "", func() {
 		fmt.Printf("%d\n", time.Now().UnixMilli())
-	}))
+	})
 
 	time.Sleep(5 * time.Second)
 	cancel()

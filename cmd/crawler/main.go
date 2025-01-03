@@ -19,5 +19,5 @@ func main() {
 
 	time.Sleep(24 * time.Hour)
 
-	crawler.Terminate().Await()
+	ezgo.AsyncVoid(crawler.Terminate).Await()
 }

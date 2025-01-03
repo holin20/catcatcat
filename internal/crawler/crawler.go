@@ -60,7 +60,7 @@ func (c *Crawler) Start(ctx context.Context) {
 		}
 
 		resultLogger := c.scope.GetLogger().Named("Result")
-		c.scheduler.Repeat(ctx, interval, ezgo.NewNamedTask("Fetch "+item.name, func() {
+		c.scheduler.Repeat(ctx, interval, "Fetch "+item.name, func() {
 			itemModel, err := costco.FetchItemModel(c.scope, item.itemId, item.categoryId, item.productId, item.queryStringPatch)
 			if ezgo.IsErr(err) {
 				ezgo.LogCausesf(c.scope.GetLogger(), err, "FetchItemModel(%s)", item.name)
@@ -73,7 +73,7 @@ func (c *Crawler) Start(ctx context.Context) {
 				zap.Float64("price", itemModel.Price),
 				zap.Bool("available", itemModel.Available),
 			)
-		}))
+		})
 	}
 
 	// c.scheduler.Repeat(ctx, 10*time.Second, ezgo.NewNamedTask("FetchMacbookPrice", func() {
@@ -86,6 +86,6 @@ func (c *Crawler) Start(ctx context.Context) {
 	// }))
 }
 
-func (c *Crawler) Terminate() *ezgo.AwaitableVoid {
-	return ezgo.AsyncVoid(c.scheduler.Terminate)
+func (c *Crawler) Terminate() {
+	c.scheduler.Terminate()
 }

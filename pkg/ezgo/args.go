@@ -1,16 +1,16 @@
 package ezgo
 
-type pack2[T1, T2 any] struct {
-	arg1 T1
-	arg2 T2
+type tuple2[T1, T2 any] struct {
+	_1 T1
+	_2 T2
 }
 
-func Pack2[T1, T2 any](arg1 T1, arg2 T2) *pack2[T1, T2] {
-	return &pack2[T1, T2]{arg1, arg2}
+func Tuple2[T1, T2 any](_1 T1, _2 T2) *tuple2[T1, T2] {
+	return &tuple2[T1, T2]{_1, _2}
 }
 
-func (p *pack2[T1, T2]) Unpack() (T1, T2) {
-	return p.arg1, p.arg2
+func (t *tuple2[T1, T2]) Unpack() (T1, T2) {
+	return t._1, t._2
 }
 
 type pack3[T1, T2, T3 any] struct {

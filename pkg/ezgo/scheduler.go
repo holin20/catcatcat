@@ -26,14 +26,6 @@ func (t *task) Run() {
 	t.fn()
 }
 
-func NewNamedTask(name string, fn func()) *task {
-	return &task{name: name, fn: fn}
-}
-
-func NewUnnamedTask(fn func()) *task {
-	return &task{fn: fn}
-}
-
 // Scheduler
 
 type Scheduler struct {
@@ -53,12 +45,26 @@ func NewScheduler(scope *Scope) *Scheduler {
 func (s *Scheduler) Repeat(
 	ctx context.Context,
 	interval time.Duration,
-	task *task,
+	taskName string,
+	fn func(),
 ) {
-	s.RepeatN(ctx, interval, -1, task)
+	s.RepeatN(ctx, interval, -1, taskName, fn)
 }
 
 func (s *Scheduler) RepeatN(
+	ctx context.Context,
+	interval time.Duration,
+	repeat int64, // negative number means infinite
+	taskName string,
+	fn func(),
+) {
+	s.repeatN(ctx, interval, repeat, &task{
+		name: taskName,
+		fn:   fn,
+	})
+}
+
+func (s *Scheduler) repeatN(
 	ctx context.Context,
 	interval time.Duration,
 	repeat int64, // negative number means infinite
