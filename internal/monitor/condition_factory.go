@@ -10,11 +10,11 @@ import (
 type ConditionType int
 
 const (
-	eGreater ConditionType = 1
-	eLess    ConditionType = 2
-	eEqual   ConditionType = 3
-	eInside  ConditionType = 4
-	eOutside ConditionType = 5
+	GreaterCondition  ConditionType = 1
+	LessCondition     ConditionType = 2
+	EqualCondition    ConditionType = 3
+	InsideCondition   ConditionType = 4
+	eOutsideCondition ConditionType = 5
 )
 
 func BuildCondition[T cmp.Ordered](
@@ -22,13 +22,13 @@ func BuildCondition[T cmp.Ordered](
 	args ...T,
 ) (Condition[T], error) {
 	switch typ {
-	case eGreater:
+	case GreaterCondition:
 		ezgo.Assertf(len(args) == 1, "len(args) should be euqal to %d for type %d", 1, typ)
 		return &Greater[T]{Threshold: args[0]}, nil
-	case eLess:
+	case LessCondition:
 		ezgo.Assertf(len(args) == 1, "len(args) should be euqal to %d for type %d", 1, typ)
 		return &Less[T]{Threshold: args[0]}, nil
-	case eEqual:
+	case EqualCondition:
 		ezgo.Assertf(len(args) == 1, "len(args) should be euqal to %d for type %d", 1, typ)
 		return &Equal[T]{Target: args[0]}, nil
 	}

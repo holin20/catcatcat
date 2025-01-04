@@ -2,38 +2,49 @@ package monitor
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
+	"go.uber.org/zap"
 )
 
 type Monitor struct {
 	scope     *ezgo.Scope
 	scheduler *ezgo.Scheduler
-	rules     []*Rule[float64]
-}
 
-var RULES_CONFIG = []struct {
-	name          string
-	queryType     QueryType
-	conditionType ConditionType
-	conditionArgs float64
-}{
-	{"Macbook", eEcho, eLess, 1050.0},
-	{"Face", eEcho, eLess, 100000.0},
+	rules       []*Rule[float64]
+	ruleConfigs []*RuleConfig
+
+	evalInterval time.Duration
 }
 
 func NewMonitor(scope *ezgo.Scope) *Monitor {
+	scope = scope.WithLogger(scope.GetLogger().Named("Monitor"))
 	m := &Monitor{
 		scope:     scope,
 		scheduler: ezgo.NewScheduler(scope),
 	}
+	return m
+}
+
+func (m *Monitor) WithRuleConfigs(ruleConfigs []*RuleConfig) *Monitor {
+	m.ruleConfigs = ruleConfigs
 	m.buildRules()
 	return m
 }
 
+func (m *Monitor) WithEvalInterval(evalInterval time.Duration) *Monitor {
+	m.evalInterval = evalInterval
+	return m
+}
+
 func (m *Monitor) Kickoff(ctx context.Context) {
-	m.scheduler.Repeat(ctx, time.Minute, "Monitor", func() {
+	evalInterval := m.evalInterval
+	if evalInterval == 0 {
+		evalInterval = time.Minute
+	}
+	m.scheduler.Repeat(ctx, evalInterval, "Monitor", func() {
 		if err := m.evalRules(ctx, time.Now()); err != nil {
 			ezgo.LogCausesf(m.scope.GetLogger(), err, "evalRules")
 		}
@@ -41,32 +52,52 @@ func (m *Monitor) Kickoff(ctx context.Context) {
 }
 
 func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
-	for _, r := range m.rules {
-		met, err := r.Eval(ctx, now)
+	awaitbles := ezgo.SliceApplyAsync(m.rules, func(i int, r *Rule[float64]) bool {
+		m.scope.GetLogger().Info("Evaluating rule", zap.String("name", r.GetName()), zap.Int("rule#", i))
+		met, queryResult, err := r.Eval(ctx, now)
 		if err != nil {
 			ezgo.LogCausesf(m.scope.GetLogger(), err, "Eval")
-			continue
+			return false
 		}
 		if met {
-			m.notify(r, now)
+			m.notify(r, queryResult, now)
 		}
-	}
+		return met
+	})
+
+	metStatusSlice := ezgo.Await(awaitbles...)
+	metStatusSlice = ezgo.SliceFilter(metStatusSlice, func(b bool) bool { return b })
+	m.scope.GetLogger().Info(fmt.Sprintf("%d rules are met", len(metStatusSlice)))
 	return nil
 }
 
-func (m *Monitor) notify(r *Rule[float64], now time.Time) {
+func (m *Monitor) notify(r *Rule[float64], queryResult float64, now time.Time) {
+	m.scope.GetLogger().Info(
+		"Notify rule is met",
+		zap.String("rule", r.GetName()),
+		zap.Float64("query_result", queryResult),
+		zap.Time("now", now),
+	)
 }
 
-func (m *Monitor) buildRules() error {
+func (m *Monitor) buildRules() {
 	var rules []*Rule[float64]
-	for _, rc := range RULES_CONFIG {
+	for _, rc := range m.ruleConfigs {
 		rules = append(rules, &Rule[float64]{
-			query:     ezgo.Must(BuildQuery[float64](rc.queryType)),
-			condition: ezgo.Must(BuildCondition[float64](rc.conditionType, rc.conditionArgs)),
+			name: rc.Name,
+			query: ezgo.Must(BuildQuery[float64](
+				rc.QueryType,
+				rc.QueryArgs...,
+			)),
+			condition: ezgo.Must(BuildCondition[float64](
+				rc.ConditionType,
+				rc.ConditionArgs,
+			)),
 		})
 	}
 	m.rules = rules
-	return nil
+
+	m.scope.GetLogger().Info("Rules built", zap.Int("rule count", len(m.rules)))
 }
 
 func (m *Monitor) Terminate() {

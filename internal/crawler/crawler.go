@@ -22,7 +22,7 @@ func NewCrawler(scope *ezgo.Scope) *Crawler {
 	}
 }
 
-func (c *Crawler) Start(ctx context.Context) {
+func (c *Crawler) Kickoff(ctx context.Context) {
 	items := []struct {
 		name         string
 		priceUrl     string

@@ -15,9 +15,9 @@ func main() {
 	ctx := context.Background()
 
 	crawler := crawler.NewCrawler(scope)
-	crawler.Start(ctx)
+	crawler.Kickoff(ctx)
 
 	time.Sleep(24 * time.Hour)
 
-	ezgo.AsyncVoid(crawler.Terminate).Await()
+	crawler.Terminate()
 }

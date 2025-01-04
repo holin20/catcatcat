@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"encoding/csv"
 	"fmt"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
@@ -9,17 +10,19 @@ import (
 type QueryType int
 
 const (
-	eEcho QueryType = 1
+	FloatCsvQuery QueryType = 1
 )
 
-func BuildQuery[T any](
+func BuildQuery[T float64](
 	typ QueryType,
 	args ...any,
 ) (Queryable[T], error) {
 	switch typ {
-	case eEcho:
+	case FloatCsvQuery:
 		ezgo.Assertf(len(args) == 1, "len(args) should be euqal to %d for type %d", 1, typ)
-		return &Echo[T]{}, nil
+		csvReader := ezgo.AssertType[*csv.Reader](args[0], "FloatCsvQuery needs a csvReadr")
+		q := &FloatCsvReaderQuery[T]{csvReader: *csvReader}
+		return q, nil
 	}
 	return nil, fmt.Errorf("non-supported query type: %d", typ)
 }

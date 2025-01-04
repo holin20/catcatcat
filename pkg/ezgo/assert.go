@@ -18,6 +18,12 @@ func Assertf(cond bool, msgFmt string, args ...any) {
 	Fatal(fmt.Sprintf(msgFmt, args...))
 }
 
+func AssertType[D any](s any, msg string) D {
+	d, ok := s.(D)
+	Assert(ok, msg)
+	return d
+}
+
 func AssertAlways(msg string) {
 	Assert(false, msg)
 }

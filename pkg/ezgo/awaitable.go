@@ -3,23 +3,19 @@ package ezgo
 import "sync"
 
 type AwaitableVoid struct {
-	doneChan chan struct{}
+	wg *sync.WaitGroup
 }
 
 func NewAwaitableVoid() (*AwaitableVoid, func()) {
-	doneChan := make(chan struct{})
-	awaitable := &AwaitableVoid{
-		doneChan: doneChan,
-	}
-	signalFunc := func() {
-		close(doneChan)
-	}
-
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	awaitable := &AwaitableVoid{wg: wg}
+	signalFunc := func() { wg.Done() }
 	return awaitable, signalFunc
 }
 
 func (a *AwaitableVoid) Await() {
-	<-a.doneChan
+	a.wg.Wait()
 }
 
 func AwaitAvoid(awaitables ...AwaitableVoid) {
@@ -37,23 +33,24 @@ func AwaitAvoid(awaitables ...AwaitableVoid) {
 ////////
 
 type Awaitable[T any] struct {
-	doneChan chan T
+	wg *sync.WaitGroup
+	v  T
 }
 
 func NewAwaitable[T any]() (*Awaitable[T], func(v T)) {
-	doneChan := make(chan T)
-	awaitable := &Awaitable[T]{
-		doneChan: doneChan,
-	}
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	awaitable := &Awaitable[T]{wg: wg}
 	signalFunc := func(v T) {
-		doneChan <- v
+		awaitable.v = v
+		wg.Done()
 	}
-
 	return awaitable, signalFunc
 }
 
 func (a *Awaitable[T]) Await() T {
-	return <-a.doneChan
+	a.wg.Wait()
+	return a.v
 }
 
 func Await[T any](awaitables ...*Awaitable[T]) []T {
