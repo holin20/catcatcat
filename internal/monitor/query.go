@@ -39,3 +39,30 @@ func (e *FloatCsvReaderQuery[T]) Query(ctx context.Context, now time.Time) (T, e
 
 	return T(v), nil
 }
+
+// ZapTailQuery
+
+type ZapTailQuery[T float64] struct {
+	logPath   string
+	timeField string
+	valField  string
+}
+
+func NewZapTailQuery[T float64](logPath, timeField, valField string) *ZapTailQuery[T] {
+	return &ZapTailQuery[T]{logPath, timeField, valField}
+}
+
+func (e *ZapTailQuery[T]) Query(ctx context.Context, now time.Time) (T, error) {
+	lastLine, err := ezgo.TailFile(e.logPath)
+	if ezgo.IsErr(err) {
+		return 0, ezgo.NewCause(err, "TailFile")
+	}
+	if len(lastLine) == 0 { // empty file
+		return 0, nil
+	}
+	result, err := ezgo.ExtractJsonPath(lastLine, e.valField)
+	if ezgo.IsErr(err) {
+		return 0, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", lastLine, e.valField)
+	}
+	return T(result.Float()), nil
+}
