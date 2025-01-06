@@ -54,13 +54,13 @@ func (m *Monitor) Kickoff(ctx context.Context) {
 func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
 	awaitbles := ezgo.SliceApplyAsync(m.rules, func(i int, r *Rule[float64]) bool {
 		m.scope.GetLogger().Info("Evaluating rule", zap.String("name", r.GetName()), zap.Int("rule#", i))
-		met, queryResult, err := r.Eval(ctx, now)
+		met, queryResult, queryResultTime, err := r.Eval(ctx, now)
 		if err != nil {
 			ezgo.LogCausesf(m.scope.GetLogger(), err, "Eval")
 			return false
 		}
 		if met {
-			m.notify(r, queryResult, now)
+			m.notify(r, queryResult, queryResultTime, now)
 		}
 		return met
 	})
@@ -71,12 +71,19 @@ func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
 	return nil
 }
 
-func (m *Monitor) notify(r *Rule[float64], queryResult float64, now time.Time) {
+func (m *Monitor) notify(
+	r *Rule[float64],
+	queryResult float64,
+	queryResultTime time.Time,
+	queryTime time.Time,
+) {
 	m.scope.GetLogger().Info(
 		"Notify rule is met",
 		zap.String("rule", r.GetName()),
 		zap.Float64("query_result", queryResult),
-		zap.Time("now", now),
+		zap.Time("query_result_time", queryResultTime),
+		zap.Duration("result_delay", queryTime.Sub(queryResultTime)),
+		zap.Time("query_time", queryTime),
 	)
 }
 

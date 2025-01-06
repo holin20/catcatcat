@@ -17,13 +17,13 @@ func NewRule[V any]() *Rule[V] {
 	return &Rule[V]{}
 }
 
-func (r *Rule[V]) Eval(ctx context.Context, now time.Time) (bool, V, error) {
-	queryResult, err := r.query.Query(ctx, now)
+func (r *Rule[V]) Eval(ctx context.Context, now time.Time) (bool, V, time.Time, error) {
+	queryResult, qtime, err := r.query.Query(ctx, now)
 	var zero V
 	if ezgo.IsErr(err) {
-		return false, zero, ezgo.NewCause(err, "Query")
+		return false, zero, now, ezgo.NewCause(err, "Query")
 	}
-	return r.condition.Met(queryResult), queryResult, nil
+	return r.condition.Met(queryResult), queryResult, qtime, nil
 }
 
 func (r *Rule[V]) GetName() string {
