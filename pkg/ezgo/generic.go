@@ -36,6 +36,14 @@ func IfEval[T any](cond bool, trueFunc, falseFunc func()) {
 	}
 }
 
+func NonEmptyOr(x, y string) string {
+	return If(x != "", x, y)
+}
+
+func NonNilOr[T any](x, y *T) *T {
+	return If(x != nil, x, y)
+}
+
 func Arg1[T1, Trest any](arg1 T1, args ...Trest) T1 {
 	return arg1
 }
