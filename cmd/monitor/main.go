@@ -2,10 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/csv"
-	"strings"
 	"time"
 
+	"github.com/holin20/catcatcat/internal/example"
 	"github.com/holin20/catcatcat/internal/monitor"
 	"github.com/holin20/catcatcat/pkg/ezgo"
 )
@@ -16,20 +15,26 @@ func main() {
 
 	ctx := context.Background()
 
-	dpCsv := ezgo.SliceApply(
-		[]float64{1, 2, 3, 4, 5, 6, 7},
-		ezgo.FloatToString,
-	)
-	csvReader := csv.NewReader(strings.NewReader(strings.Join(dpCsv, "\n")))
-
 	var ruleConfigs = []*monitor.RuleConfig{
-		{"Macbook", monitor.FloatCsvQuery, []any{csvReader}, monitor.LessCondition, 1050.0},
-		{"Face", monitor.FloatCsvQuery, []any{csvReader}, monitor.LessCondition, 100000.0},
+		{
+			Name:          example.CATS[0].Name,
+			QueryType:     monitor.ZapTail,
+			QueryArgs:     []any{"logs/cdp_0.txt", "ts", "price"},
+			ConditionType: monitor.LessCondition,
+			ConditionArgs: 1050.0,
+		},
+		{
+			Name:          example.CATS[1].Name,
+			QueryType:     monitor.ZapTail,
+			QueryArgs:     []any{"logs/cdp_1.txt", "ts", "inStock"},
+			ConditionType: monitor.EqualCondition,
+			ConditionArgs: 1,
+		},
 	}
 
 	monitor := monitor.NewMonitor(scope).
 		WithRuleConfigs(ruleConfigs).
-		WithEvalInterval(time.Second)
+		WithEvalInterval(time.Minute)
 
 	monitor.Kickoff(ctx)
 

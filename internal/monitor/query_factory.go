@@ -10,7 +10,8 @@ import (
 type QueryType int
 
 const (
-	FloatCsvQuery QueryType = 1
+	FloatCsvReader QueryType = 1
+	ZapTail        QueryType = 2
 )
 
 func BuildQuery[T float64](
@@ -18,10 +19,17 @@ func BuildQuery[T float64](
 	args ...any,
 ) (Queryable[T], error) {
 	switch typ {
-	case FloatCsvQuery:
+	case FloatCsvReader:
 		ezgo.Assertf(len(args) == 1, "len(args) should be euqal to %d for type %d", 1, typ)
-		csvReader := ezgo.AssertType[*csv.Reader](args[0], "FloatCsvQuery needs a csvReadr")
+		csvReader := ezgo.AssertType[*csv.Reader](args[0], "FloatCsvReader needs a csvReadr")
 		q := &FloatCsvReaderQuery[T]{csvReader: *csvReader}
+		return q, nil
+	case ZapTail:
+		ezgo.Assertf(len(args) == 3, "len(args) should be euqal to %d for type %d", 3, typ)
+		logFilePath := ezgo.AssertType[string](args[0], "arg0 should be string")
+		timeField := ezgo.AssertType[string](args[1], "arg1 should be string")
+		valField := ezgo.AssertType[string](args[2], "arg2 should be string")
+		q := NewZapTailQuery[T](logFilePath, timeField, valField)
 		return q, nil
 	}
 	return nil, fmt.Errorf("non-supported query type: %d", typ)

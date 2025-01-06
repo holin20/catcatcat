@@ -54,15 +54,16 @@ func NewZapTailQuery[T float64](logPath, timeField, valField string) *ZapTailQue
 
 func (e *ZapTailQuery[T]) Query(ctx context.Context, now time.Time) (T, error) {
 	lastLine, err := ezgo.TailFile(e.logPath)
+	var zero T
 	if ezgo.IsErr(err) {
-		return 0, ezgo.NewCause(err, "TailFile")
+		return zero, ezgo.NewCause(err, "TailFile")
 	}
 	if len(lastLine) == 0 { // empty file
-		return 0, nil
+		return zero, ezgo.NewCause(fmt.Errorf("empty file: %s", e.logPath), "EmptyFile")
 	}
 	result, err := ezgo.ExtractJsonPath(lastLine, e.valField)
 	if ezgo.IsErr(err) {
-		return 0, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", lastLine, e.valField)
+		return zero, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", lastLine, e.valField)
 	}
 	return T(result.Float()), nil
 }

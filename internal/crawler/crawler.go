@@ -11,6 +11,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	defaultCrawlInterval = 10 * time.Second
+)
+
 type CrawlListEntry = struct {
 	CatId  string
 	Cat    *model.Cat
@@ -39,7 +43,7 @@ func (c *Crawler) WithCrawlList(crawlList []CrawlListEntry) *Crawler {
 func (c *Crawler) Kickoff(ctx context.Context) {
 	for _, entry := range c.crawlList {
 		entry := entry
-		interval := time.Minute
+		interval := defaultCrawlInterval
 		resultLogger := ezgo.CloneLogger(
 			c.scope.GetLogger(),
 			"Result",
