@@ -37,7 +37,7 @@ func CloneLogger(baseLogger *zap.Logger, name string, outputPath string) *zap.Lo
 
 func CreateDefaultLogger() *zap.Logger {
 	loc, _ := time.LoadLocation("America/Los_Angeles")
-	logFilePath := fmt.Sprintf("%s/%s.txt", getZapLogPathRoot(), time.Now().In(loc).Format("2006-01-02_15-04"))
+	logFilePath := fmt.Sprintf("%s/%s.txt", getZapLogPathRoot(), time.Now().In(loc).Format("2006-01-02"))
 	config := zap.Config{
 		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
 		Development: false,
@@ -67,15 +67,15 @@ func getJsonEncoder() *zapcore.EncoderConfig {
 
 	// Custom Time Encoder for PST
 	pstTimeEncoder := func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-		enc.AppendString(t.In(location).Format("2006-01-02 15:04:05"))
+		enc.AppendString(t.In(location).Format(time.RFC3339))
 	}
 
 	return &zapcore.EncoderConfig{
-		TimeKey:          "ts",
-		LevelKey:         "level",
-		MessageKey:       "msg",
-		NameKey:          "logger",
-		StacktraceKey:    "stacktrace",
+		TimeKey:    "ts",
+		LevelKey:   "level",
+		MessageKey: "msg",
+		NameKey:    "logger",
+		// StacktraceKey:    "stacktrace",
 		EncodeTime:       pstTimeEncoder, // Use the custom PST time encoder
 		EncodeLevel:      zapcore.CapitalLevelEncoder,
 		EncodeDuration:   zapcore.StringDurationEncoder,

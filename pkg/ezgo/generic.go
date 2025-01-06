@@ -44,6 +44,11 @@ func NonNilOr[T any](x, y *T) *T {
 	return If(x != nil, x, y)
 }
 
+func NonZeroOr[T comparable](x, y T) T {
+	var zero T
+	return If(x != zero, x, y)
+}
+
 func Arg1[T1, Trest any](arg1 T1, args ...Trest) T1 {
 	return arg1
 }

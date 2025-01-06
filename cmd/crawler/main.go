@@ -15,7 +15,10 @@ func main() {
 
 	ctx := context.Background()
 
-	crawler := crawler.NewCrawler(scope).WithCrawlList(example.CRAWL_LIST)
+	crawler := crawler.NewCrawler(scope).
+		WithCrawlList(example.CRAWL_LIST).
+		WithCrawlInterval(1 * time.Minute)
+
 	crawler.Kickoff(ctx)
 
 	time.Sleep(24 * time.Hour)

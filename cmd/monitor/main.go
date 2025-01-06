@@ -21,14 +21,14 @@ func main() {
 			QueryType:     monitor.ZapTail,
 			QueryArgs:     []any{"logs/cdp_0.txt", "ts", "price"},
 			ConditionType: monitor.LessCondition,
-			ConditionArgs: 1050.0,
+			ConditionArgs: 5000.0,
 		},
 		{
 			Name:          example.CATS[1].Name,
 			QueryType:     monitor.ZapTail,
 			QueryArgs:     []any{"logs/cdp_1.txt", "ts", "inStock"},
 			ConditionType: monitor.EqualCondition,
-			ConditionArgs: 1,
+			ConditionArgs: 5000,
 		},
 	}
 
@@ -38,7 +38,7 @@ func main() {
 
 	monitor.Kickoff(ctx)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(24 * time.Hour)
 
 	monitor.Terminate()
 }

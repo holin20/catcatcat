@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultCrawlInterval = 10 * time.Second
+	defaultCrawlInterval = 1 * time.Minute
 )
 
 type CrawlListEntry = struct {
@@ -22,9 +22,10 @@ type CrawlListEntry = struct {
 }
 
 type Crawler struct {
-	scheduler *ezgo.Scheduler
-	scope     *ezgo.Scope
-	crawlList []CrawlListEntry
+	scheduler    *ezgo.Scheduler
+	scope        *ezgo.Scope
+	crawlList    []CrawlListEntry
+	crawInterval time.Duration
 }
 
 func NewCrawler(scope *ezgo.Scope) *Crawler {
@@ -40,10 +41,15 @@ func (c *Crawler) WithCrawlList(crawlList []CrawlListEntry) *Crawler {
 	return c
 }
 
+func (c *Crawler) WithCrawlInterval(crawlInterval time.Duration) *Crawler {
+	c.crawInterval = crawlInterval
+	return c
+}
+
 func (c *Crawler) Kickoff(ctx context.Context) {
 	for _, entry := range c.crawlList {
 		entry := entry
-		interval := defaultCrawlInterval
+		interval := ezgo.NonZeroOr(c.crawInterval, defaultCrawlInterval)
 		resultLogger := ezgo.CloneLogger(
 			c.scope.GetLogger(),
 			"Result",
@@ -52,6 +58,7 @@ func (c *Crawler) Kickoff(ctx context.Context) {
 		c.scheduler.Repeat(ctx, interval, "Fetch "+entry.Cat.Name, func() {
 			itemModel, err := costco.FetchItemModel(
 				c.scope,
+				entry.Cat.Name,
 				entry.Costco.ItemId,
 				entry.Costco.CategoryId,
 				entry.Costco.ProductId,

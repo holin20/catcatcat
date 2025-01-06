@@ -43,6 +43,7 @@ func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 
 func FetchItemModel(
 	scope *ezgo.Scope,
+	name string,
 	itemId string,
 	categoryId string,
 	productId string,
@@ -52,7 +53,7 @@ func FetchItemModel(
 
 	// fetch price
 	priceUrl := buildGetContractPriceUrl(itemId, categoryId, productId, queryStringPatch)
-	scope.GetLogger().Info("GetContractPriceUrl", zap.String("priceUrl", priceUrl))
+	scope.GetLogger().Info("GetContractPriceUrl", zap.String("priceUrl", priceUrl), zap.String("name", name))
 	priceResult, err := fetchJsonPath(priceUrl, "finalOnlinePrice")
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "fetchJsonPath.finalOnlinePrice."+priceUrl)
@@ -60,7 +61,7 @@ func FetchItemModel(
 
 	// fetch inventory
 	inventroyUrl := builGetInventoryDetailUrl(itemId, categoryId, productId, queryStringPatch)
-	scope.GetLogger().Info("GetInventoryDetailUrl", zap.String("inventroyUrl", inventroyUrl))
+	scope.GetLogger().Info("GetInventoryDetailUrl", zap.String("inventroyUrl", inventroyUrl), zap.String("name", name))
 	hasInvResult, err := fetchJsonPath(inventroyUrl, "invAvailable")
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "fetchJsonPath.invAvailable."+inventroyUrl)

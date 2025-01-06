@@ -71,7 +71,7 @@ func (e *ZapTailQuery[T]) Query(ctx context.Context, now time.Time) (T, time.Tim
 		return zero, now, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s) for time", lastLine, e.timeField)
 	}
 
-	parsedTime, err := time.Parse("2006-01-02 15:04:05", ts.Str)
+	parsedTime, err := time.Parse(time.RFC3339, ts.Str)
 	if ezgo.IsErr(err) {
 		return zero, now, ezgo.NewCausef(err, "time.Parse(%s)", ts.Str)
 	}
