@@ -1,6 +1,7 @@
 package costco
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
@@ -16,10 +17,10 @@ type ItemModel struct {
 	Price      float64
 }
 
-func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
+func FetchItem(httpClient *http.Client, inventroyUrl, priceUrl string) (float64, bool, error) {
 	priceArgs, invArgs := ezgo.Await2(
-		ezgo.Async2(ezgo.Bind2_2(fetchJsonPath, priceUrl, "finalOnlinePrice")),
-		ezgo.Async2(ezgo.Bind2_2(fetchJsonPath, inventroyUrl, "invAvailable")),
+		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathes, httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})),
+		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathes, httpClient, inventroyUrl, []string{"invAvailable"})),
 	)
 
 	priceResult, priceErr := priceArgs.Unpack()
@@ -28,10 +29,10 @@ func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 	var price float64
 	var hasInv bool
 	if priceResult != nil {
-		price = priceResult.Float()
+		price = priceResult[0].Float() - priceResult[1].Float()
 	}
 	if hasInvResult != nil {
-		hasInv = hasInvResult.Bool()
+		hasInv = hasInvResult[0].Bool()
 	}
 
 	return price, hasInv, ezgo.If(
@@ -43,6 +44,7 @@ func FetchItem(inventroyUrl, priceUrl string) (float64, bool, error) {
 
 func FetchItemModel(
 	scope *ezgo.Scope,
+	httpClient *http.Client,
 	name string,
 	itemId string,
 	categoryId string,
@@ -54,7 +56,7 @@ func FetchItemModel(
 	// fetch price
 	priceUrl := buildGetContractPriceUrl(itemId, categoryId, productId, queryStringPatch)
 	scope.GetLogger().Info("GetContractPriceUrl", zap.String("priceUrl", priceUrl), zap.String("name", name))
-	priceResult, err := fetchJsonPath(priceUrl, "finalOnlinePrice")
+	priceResult, err := fetchJsonPathes(httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "fetchJsonPath.finalOnlinePrice."+priceUrl)
 	}
@@ -62,7 +64,7 @@ func FetchItemModel(
 	// fetch inventory
 	inventroyUrl := builGetInventoryDetailUrl(itemId, categoryId, productId, queryStringPatch)
 	scope.GetLogger().Info("GetInventoryDetailUrl", zap.String("inventroyUrl", inventroyUrl), zap.String("name", name))
-	hasInvResult, err := fetchJsonPath(inventroyUrl, "invAvailable")
+	hasInvResult, err := fetchJsonPathes(httpClient, inventroyUrl, []string{"invAvailable"})
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "fetchJsonPath.invAvailable."+inventroyUrl)
 	}
@@ -71,13 +73,13 @@ func FetchItemModel(
 		ItemId:     itemId,
 		CategoryId: categoryId,
 		ProductId:  productId,
-		Price:      priceResult.Float(),
-		Available:  hasInvResult.Bool(),
+		Price:      priceResult[0].Float() - priceResult[1].Float(),
+		Available:  hasInvResult[0].Bool(),
 	}, nil
 }
 
-func fetchJsonPath(url string, path string) (*gjson.Result, error) {
-	body, err := ezgo.NewHttpClient().
+func fetchJsonPathes(httpClient *http.Client, url string, pathes []string) ([]*gjson.Result, error) {
+	body, err := ezgo.NewHttpClientWithCustomClient(httpClient).
 		WithDefaultUserAgent().
 		SetCookieString(getCookieString()).
 		Get(url)
@@ -85,12 +87,15 @@ func fetchJsonPath(url string, path string) (*gjson.Result, error) {
 		return nil, ezgo.NewCausef(err, "HttpCall(%s)", url)
 	}
 
-	result, err := ezgo.ExtractJsonPath(string(body), path)
-	if ezgo.IsErr(err) {
-		return nil, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", ezgo.FirstNChars(body, 200), path)
+	results := make([]*gjson.Result, len(pathes))
+	for i, path := range pathes {
+		results[i], err = ezgo.ExtractJsonPath(string(body), path)
+		if ezgo.IsErr(err) {
+			return nil, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", ezgo.FirstNChars(body, 200), path)
+		}
 	}
 
-	return result, nil
+	return results, nil
 }
 
 func getCookieString() string {

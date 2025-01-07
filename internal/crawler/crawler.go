@@ -3,6 +3,7 @@ package crawler
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/holin20/catcatcat/internal/fetcher/costco"
@@ -26,13 +27,15 @@ type Crawler struct {
 	scope        *ezgo.Scope
 	crawlList    []CrawlListEntry
 	crawInterval time.Duration
+	httpClient   *http.Client
 }
 
 func NewCrawler(scope *ezgo.Scope) *Crawler {
 	scope = scope.WithLogger(scope.GetLogger().Named("Crawler"))
 	return &Crawler{
-		scheduler: ezgo.NewScheduler(scope),
-		scope:     scope,
+		scheduler:  ezgo.NewScheduler(scope),
+		scope:      scope,
+		httpClient: &http.Client{},
 	}
 }
 
@@ -47,17 +50,20 @@ func (c *Crawler) WithCrawlInterval(crawlInterval time.Duration) *Crawler {
 }
 
 func (c *Crawler) Kickoff(ctx context.Context) {
-	for _, entry := range c.crawlList {
-		entry := entry
-		interval := ezgo.NonZeroOr(c.crawInterval, defaultCrawlInterval)
-		resultLogger := ezgo.CloneLogger(
+	resultLoggers := ezgo.SliceApply(c.crawlList, func(i int, entry CrawlListEntry) *zap.Logger {
+		return ezgo.CloneLogger(
 			c.scope.GetLogger(),
 			"Result",
 			fmt.Sprintf("cdp_%s.txt", entry.Costco.CatId),
 		)
-		c.scheduler.Repeat(ctx, interval, "Fetch "+entry.Cat.Name, func() {
+	})
+
+	interval := ezgo.NonZeroOr(c.crawInterval, defaultCrawlInterval)
+	c.scheduler.Repeat(ctx, interval, "Crawler Single Fetcher", func() {
+		for i, entry := range c.crawlList {
 			itemModel, err := costco.FetchItemModel(
 				c.scope,
+				c.httpClient,
 				entry.Cat.Name,
 				entry.Costco.ItemId,
 				entry.Costco.CategoryId,
@@ -66,17 +72,17 @@ func (c *Crawler) Kickoff(ctx context.Context) {
 			)
 			if ezgo.IsErr(err) {
 				ezgo.LogCausesf(c.scope.GetLogger(), err, "FetchItemModel(%s)", entry.Cat.Name)
-				return
+				continue
 			}
 
-			resultLogger.Info(
+			resultLoggers[i].Info(
 				"Fetched cdp",
 				zap.String("name", entry.Cat.Name),
 				zap.Float64("price", itemModel.Price),
 				zap.Bool("inStock", itemModel.Available),
 			)
-		})
-	}
+		}
+	})
 }
 
 func (c *Crawler) Terminate() {
