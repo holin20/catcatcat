@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var gScope *Scope = NewScopeWithDefaultLogger()
+var gScope *Scope = NewScopeWithDefaultLogger("TestScheduler")
 
 func TestCause(t *testing.T) {
 	// This test is not yet implemented.

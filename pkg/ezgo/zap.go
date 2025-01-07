@@ -35,9 +35,14 @@ func CloneLogger(baseLogger *zap.Logger, name string, outputPath string) *zap.Lo
 	return derived
 }
 
-func CreateDefaultLogger() *zap.Logger {
+func CreateDefaultLogger(loggerName string) *zap.Logger {
 	loc, _ := time.LoadLocation("America/Los_Angeles")
-	logFilePath := fmt.Sprintf("%s/%s.txt", getZapLogPathRoot(), time.Now().In(loc).Format("2006-01-02"))
+	logFilePath := fmt.Sprintf(
+		"%s/%s_%s.txt",
+		getZapLogPathRoot(),
+		loggerName,
+		time.Now().In(loc).Format("2006-01-02"),
+	)
 	config := zap.Config{
 		Level:       zap.NewAtomicLevelAt(zap.InfoLevel),
 		Development: false,

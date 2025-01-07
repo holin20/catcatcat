@@ -87,7 +87,7 @@ func fetchJsonPath(url string, path string) (*gjson.Result, error) {
 
 	result, err := ezgo.ExtractJsonPath(string(body), path)
 	if ezgo.IsErr(err) {
-		return nil, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", body, path)
+		return nil, ezgo.NewCausef(err, "ExtractJsonPath(%s, %s)", ezgo.FirstNChars(body, 200), path)
 	}
 
 	return result, nil

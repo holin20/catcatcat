@@ -18,8 +18,8 @@ func NewScope(
 	}
 }
 
-func NewScopeWithDefaultLogger() *Scope {
-	return NewScope(CreateDefaultLogger())
+func NewScopeWithDefaultLogger(loggerName string) *Scope {
+	return NewScope(CreateDefaultLogger(loggerName))
 }
 
 func (s *Scope) GetLogger() *zap.Logger {

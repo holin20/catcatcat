@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	scope := ezgo.NewScopeWithDefaultLogger()
+	scope := ezgo.NewScopeWithDefaultLogger("Crawler")
 	defer scope.Close()
 
 	ctx := context.Background()
