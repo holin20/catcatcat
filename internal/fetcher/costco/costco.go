@@ -3,6 +3,7 @@ package costco
 import (
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
 	"github.com/tidwall/gjson"
@@ -76,6 +77,14 @@ func FetchItemModel(
 		Price:      priceResult[0].Float() - priceResult[1].Float(),
 		Available:  hasInvResult[0].Bool(),
 	}, nil
+}
+
+func fetchJsonPathesWithRetry(httpClient *http.Client, url string, pathes []string) ([]*gjson.Result, error) {
+	return ezgo.RetryOnErr(
+		ezgo.Bind3_2(fetchJsonPathes, httpClient, url, pathes),
+		3,
+		time.Second,
+	)
 }
 
 func fetchJsonPathes(httpClient *http.Client, url string, pathes []string) ([]*gjson.Result, error) {
