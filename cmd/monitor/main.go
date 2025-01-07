@@ -21,14 +21,14 @@ func main() {
 			QueryType:     monitor.ZapTail,
 			QueryArgs:     []any{"logs/cdp_0.txt", "ts", "price"},
 			ConditionType: monitor.LessCondition,
-			ConditionArgs: 5000.0,
+			ConditionArgs: 1100.0,
 		},
 		{
 			Name:          example.CATS[1].Name,
 			QueryType:     monitor.ZapTail,
 			QueryArgs:     []any{"logs/cdp_1.txt", "ts", "inStock"},
 			ConditionType: monitor.EqualCondition,
-			ConditionArgs: 5000,
+			ConditionArgs: 1,
 		},
 	}
 
