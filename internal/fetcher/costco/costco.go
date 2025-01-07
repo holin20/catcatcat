@@ -1,7 +1,6 @@
 package costco
 
 import (
-	"net/http"
 	"os"
 	"time"
 
@@ -18,7 +17,7 @@ type ItemModel struct {
 	Price      float64
 }
 
-func FetchItem(httpClient *http.Client, inventroyUrl, priceUrl string) (float64, bool, error) {
+func FetchItem(httpClient *ezgo.HttpClient, inventroyUrl, priceUrl string) (float64, bool, error) {
 	priceArgs, invArgs := ezgo.Await2(
 		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathes, httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})),
 		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathes, httpClient, inventroyUrl, []string{"invAvailable"})),
@@ -45,7 +44,7 @@ func FetchItem(httpClient *http.Client, inventroyUrl, priceUrl string) (float64,
 
 func FetchItemModel(
 	scope *ezgo.Scope,
-	httpClient *http.Client,
+	httpClient *ezgo.HttpClient,
 	name string,
 	itemId string,
 	categoryId string,
@@ -57,15 +56,18 @@ func FetchItemModel(
 	// fetch price
 	priceUrl := buildGetContractPriceUrl(itemId, categoryId, productId, queryStringPatch)
 	scope.GetLogger().Info("GetContractPriceUrl", zap.String("priceUrl", priceUrl), zap.String("name", name))
-	priceResult, err := fetchJsonPathes(httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})
+	priceResult, err := fetchJsonPathesWithRetry(httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "fetchJsonPath.finalOnlinePrice."+priceUrl)
+	}
+	if len(priceResult) != 2 {
+		return nil, ezgo.NewCausef(err, "not enough price result count: %d", len(priceResult))
 	}
 
 	// fetch inventory
 	inventroyUrl := builGetInventoryDetailUrl(itemId, categoryId, productId, queryStringPatch)
 	scope.GetLogger().Info("GetInventoryDetailUrl", zap.String("inventroyUrl", inventroyUrl), zap.String("name", name))
-	hasInvResult, err := fetchJsonPathes(httpClient, inventroyUrl, []string{"invAvailable"})
+	hasInvResult, err := fetchJsonPathesWithRetry(httpClient, inventroyUrl, []string{"invAvailable"})
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "fetchJsonPath.invAvailable."+inventroyUrl)
 	}
@@ -79,7 +81,7 @@ func FetchItemModel(
 	}, nil
 }
 
-func fetchJsonPathesWithRetry(httpClient *http.Client, url string, pathes []string) ([]*gjson.Result, error) {
+func fetchJsonPathesWithRetry(httpClient *ezgo.HttpClient, url string, pathes []string) ([]*gjson.Result, error) {
 	return ezgo.RetryOnErr(
 		ezgo.Bind3_2(fetchJsonPathes, httpClient, url, pathes),
 		3,
@@ -87,11 +89,11 @@ func fetchJsonPathesWithRetry(httpClient *http.Client, url string, pathes []stri
 	)
 }
 
-func fetchJsonPathes(httpClient *http.Client, url string, pathes []string) ([]*gjson.Result, error) {
-	body, err := ezgo.NewHttpClientWithCustomClient(httpClient).
+func fetchJsonPathes(httpClient *ezgo.HttpClient, url string, pathes []string) ([]*gjson.Result, error) {
+	body, err := httpClient.
 		WithDefaultUserAgent().
-		SetCookieString(getCookieString()).
-		Get(url)
+		SetCookieStringIfNeeded(getCookieString()).
+		Get(url, true)
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCausef(err, "HttpCall(%s)", url)
 	}

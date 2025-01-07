@@ -27,15 +27,13 @@ type Crawler struct {
 	scope        *ezgo.Scope
 	crawlList    []CrawlListEntry
 	crawInterval time.Duration
-	httpClient   *http.Client
 }
 
 func NewCrawler(scope *ezgo.Scope) *Crawler {
 	scope = scope.WithLogger(scope.GetLogger().Named("Crawler"))
 	return &Crawler{
-		scheduler:  ezgo.NewScheduler(scope),
-		scope:      scope,
-		httpClient: &http.Client{},
+		scheduler: ezgo.NewScheduler(scope),
+		scope:     scope,
 	}
 }
 
@@ -59,11 +57,12 @@ func (c *Crawler) Kickoff(ctx context.Context) {
 	})
 
 	interval := ezgo.NonZeroOr(c.crawInterval, defaultCrawlInterval)
+	goHttpClient := &http.Client{}
 	c.scheduler.Repeat(ctx, interval, "Crawler Single Fetcher", func() {
 		for i, entry := range c.crawlList {
 			itemModel, err := costco.FetchItemModel(
 				c.scope,
-				c.httpClient,
+				ezgo.NewHttpClientWithCustomClient(goHttpClient),
 				entry.Cat.Name,
 				entry.Costco.ItemId,
 				entry.Costco.CategoryId,

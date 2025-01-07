@@ -9,8 +9,9 @@ func Retry[T any](
 	retryInterval time.Duration,
 ) (T, error) {
 	var lastError error
+	var result T
 	for i := 0; i < maxAttempts; i++ {
-		result, lastError := fn()
+		result, lastError = fn()
 		if shouldRetry(result, lastError) {
 			time.Sleep(retryInterval)
 			continue

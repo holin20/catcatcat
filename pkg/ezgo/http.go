@@ -3,43 +3,55 @@ package ezgo
 import (
 	"io"
 	"net/http"
+	"strings"
 )
 
-type httpClient struct {
+type HttpClient struct {
 	headers map[string]string
 	client  *http.Client
+
+	respSetCookie string
 }
 
-func NewHttpClient() *httpClient {
-	return &httpClient{
+func NewHttpClient() *HttpClient {
+	return &HttpClient{
 		headers: make(map[string]string),
 		client:  &http.Client{},
 	}
 }
 
-func NewHttpClientWithCustomClient(client *http.Client) *httpClient {
-	return &httpClient{
+func NewHttpClientWithCustomClient(client *http.Client) *HttpClient {
+	return &HttpClient{
 		headers: make(map[string]string),
 		client:  client,
 	}
 }
 
-func (c *httpClient) SetHeader(key, value string) *httpClient {
+func (c *HttpClient) SetHeader(key, value string) *HttpClient {
 	c.headers[key] = value
 	return c
 }
 
-func (c *httpClient) SetCookieString(value string) *httpClient {
+func (c *HttpClient) SetCookieString(value string) *HttpClient {
 	c.headers[headerCookie] = value
 	return c
 }
 
-func (c *httpClient) WithDefaultUserAgent() *httpClient {
+func (c *HttpClient) SetCookieStringIfNeeded(value string) *HttpClient {
+	if c.respSetCookie != "" {
+		c.headers[headerCookie] = c.respSetCookie
+		return c
+	}
+	c.headers[headerCookie] = value
+	return c
+}
+
+func (c *HttpClient) WithDefaultUserAgent() *HttpClient {
 	c.SetHeader(headerUserAgent, defaultUserAgent)
 	return c
 }
 
-func (c *httpClient) Get(url string) (string, error) {
+func (c *HttpClient) Get(url string, setRespCookie bool) (string, error) {
 	req, err := http.NewRequest(methodGet, url, nil)
 	if err != nil {
 		return "", err
@@ -54,7 +66,13 @@ func (c *httpClient) Get(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	if resp != nil && setRespCookie && len(resp.Header.Values(headerSetCookie)) > 0 {
+		c.respSetCookie = strings.Join(resp.Header.Values(headerSetCookie), ";")
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
