@@ -62,7 +62,7 @@ func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
 			return false
 		}
 		if met {
-			m.notify(r, queryResult, queryResultTime, now)
+			m.notify(r, m.ruleConfigs[i], queryResult, queryResultTime, now)
 		}
 		return met
 	})
@@ -75,6 +75,7 @@ func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
 
 func (m *Monitor) notify(
 	r *Rule[float64],
+	ruleConfig *RuleConfig,
 	queryResult float64,
 	queryResultTime time.Time,
 	queryTime time.Time,
@@ -88,15 +89,21 @@ func (m *Monitor) notify(
 		zap.Time("query_time", queryTime),
 	)
 
-	if err := m.notifier.NotifyEmail(r.GetName(), queryTime, queryResult, queryResultTime); ezgo.IsErr(err) {
+	if err := m.notifier.NotifyEmail(
+		r.GetName(),
+		ruleConfig,
+		queryTime,
+		queryResult,
+		queryResultTime,
+	); ezgo.IsErr(err) {
 		ezgo.LogCauses(m.scope.GetLogger(), err, "NotifyEmail")
 	}
 }
 
 func (m *Monitor) buildRules() {
-	var rules []*Rule[float64]
-	for _, rc := range m.ruleConfigs {
-		rules = append(rules, &Rule[float64]{
+	rules := make([]*Rule[float64], len(m.ruleConfigs))
+	for i, rc := range m.ruleConfigs {
+		rules[i] = &Rule[float64]{
 			name: rc.Name,
 			query: ezgo.Must(BuildQuery[float64](
 				rc.QueryType,
@@ -106,7 +113,7 @@ func (m *Monitor) buildRules() {
 				rc.ConditionType,
 				rc.ConditionArgs,
 			)),
-		})
+		}
 	}
 	m.rules = rules
 

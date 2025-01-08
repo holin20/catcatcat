@@ -22,6 +22,9 @@ func main() {
 			QueryArgs:     []any{"logs/cdp_0.txt", "ts", "price"},
 			ConditionType: monitor.LessCondition,
 			ConditionArgs: 1100.0,
+
+			WatchCriteria:       "price < $1100.0",
+			QueryResultTemplate: "current price is $%f",
 		},
 		{
 			Name:          example.CATS[1].Name,
@@ -29,6 +32,9 @@ func main() {
 			QueryArgs:     []any{"logs/cdp_1.txt", "ts", "inStock"},
 			ConditionType: monitor.EqualCondition,
 			ConditionArgs: 1,
+
+			WatchCriteria:       "in stock",
+			QueryResultTemplate: "in-stock status: %f",
 		},
 	}
 

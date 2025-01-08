@@ -9,7 +9,7 @@ import (
 
 const (
 	gmailSender = "catcatcattm@gmail.com"
-	gmailPwEnv  = "secrets/google_app_password.txt"
+	gmailPwEnv  = "CATCATCAT_GAPP_PW"
 
 	recipientEmail = "holin20@gmail.com"
 )
@@ -23,17 +23,24 @@ func NewNotifier() *Notifier {
 
 func (n *Notifier) NotifyEmail(
 	ruleName string,
+	ruleConfig *RuleConfig,
 	evalTime time.Time,
 	result float64,
 	resultTime time.Time,
 ) error {
 	subject := "You've got a cat!"
+
+	currentStatus := fmt.Sprintf(ruleConfig.QueryResultTemplate, result)
+
 	body := fmt.Sprintf(
-		"Cat '%s' is just detected at %s (data obtained at %s / delay by %s)",
+		"%s was just detected to meet your watch criteria at %s (data point from %s ago)\n"+
+			"- Watch Criteria: %s\n"+
+			"- Current Status: %s\n",
 		ruleName,
 		evalTime.Format(time.RFC1123),
-		resultTime.Format(time.RFC1123),
 		evalTime.Sub(resultTime).String(),
+		ruleConfig.WatchCriteria,
+		currentStatus,
 	)
 
 	return ezgo.GmailSender().
