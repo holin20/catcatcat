@@ -12,6 +12,7 @@ import (
 type Monitor struct {
 	scope     *ezgo.Scope
 	scheduler *ezgo.Scheduler
+	notifier  *Notifier
 
 	rules       []*Rule[float64]
 	ruleConfigs []*RuleConfig
@@ -24,6 +25,7 @@ func NewMonitor(scope *ezgo.Scope) *Monitor {
 	m := &Monitor{
 		scope:     scope,
 		scheduler: ezgo.NewScheduler(scope),
+		notifier:  NewNotifier(),
 	}
 	return m
 }
@@ -85,6 +87,10 @@ func (m *Monitor) notify(
 		zap.Duration("result_delay", queryTime.Sub(queryResultTime)),
 		zap.Time("query_time", queryTime),
 	)
+
+	if err := m.notifier.NotifyEmail(r.GetName(), queryTime, queryResult, queryResultTime); ezgo.IsErr(err) {
+		ezgo.LogCauses(m.scope.GetLogger(), err, "NotifyEmail")
+	}
 }
 
 func (m *Monitor) buildRules() {
