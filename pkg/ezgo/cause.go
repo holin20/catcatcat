@@ -90,12 +90,16 @@ func (c *cause) buildRootCausingString() string {
 	)
 }
 
-func LogCausesf(logger *zap.Logger, err error, msgFmt string, args ...any) {
-	causes, rootCause := NewCausef(err, msgFmt, args...).Traceback()
+func LogCauses(logger *zap.Logger, err error, msg string) {
+	causes, rootCause := NewCause(err, msg).Traceback()
 	var causesStr []string
 	for _, cause := range causes {
 		causesStr = append(causesStr, cause.msg)
 	}
 
 	logger.Error(causes[0].msg, zap.Error(rootCause.err), zap.String("backtrace", strings.Join(causesStr, " <- ")))
+}
+
+func LogCausesf(logger *zap.Logger, err error, msgFmt string, args ...any) {
+	LogCauses(logger, err, fmt.Sprintf(msgFmt, args...))
 }
