@@ -3,14 +3,12 @@ package ezgo
 import (
 	"io"
 	"net/http"
-	"strings"
+	"net/http/cookiejar"
 )
 
 type HttpClient struct {
 	headers map[string]string
 	client  *http.Client
-
-	respSetCookie string
 }
 
 func NewHttpClient() *HttpClient {
@@ -37,21 +35,12 @@ func (c *HttpClient) SetCookieString(value string) *HttpClient {
 	return c
 }
 
-func (c *HttpClient) SetCookieStringIfNeeded(value string) *HttpClient {
-	if c.respSetCookie != "" {
-		c.headers[headerCookie] = c.respSetCookie
-		return c
-	}
-	c.headers[headerCookie] = value
-	return c
-}
-
 func (c *HttpClient) WithDefaultUserAgent() *HttpClient {
 	c.SetHeader(headerUserAgent, defaultUserAgent)
 	return c
 }
 
-func (c *HttpClient) Get(url string, setRespCookie bool) (string, error) {
+func (c *HttpClient) Get(url string, respectToRespCookie bool) (string, error) {
 	req, err := http.NewRequest(methodGet, url, nil)
 	if err != nil {
 		return "", err
@@ -66,12 +55,19 @@ func (c *HttpClient) Get(url string, setRespCookie bool) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if resp != nil {
+	if resp != nil && resp.Body != nil {
 		defer resp.Body.Close()
 	}
 
-	if resp != nil && setRespCookie && len(resp.Header.Values(headerSetCookie)) > 0 {
-		c.respSetCookie = strings.Join(resp.Header.Values(headerSetCookie), ";")
+	if resp != nil && respectToRespCookie {
+		if c.client.Jar == nil {
+			c.client.Jar, _ = cookiejar.New(nil)
+		}
+
+		respCookies := resp.Cookies()
+		if len(respCookies) > 0 {
+			c.client.Jar.SetCookies(req.URL, respCookies)
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)

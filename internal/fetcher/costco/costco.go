@@ -92,7 +92,7 @@ func fetchJsonPathesWithRetry(httpClient *ezgo.HttpClient, url string, pathes []
 func fetchJsonPathes(httpClient *ezgo.HttpClient, url string, pathes []string) ([]*gjson.Result, error) {
 	body, err := httpClient.
 		WithDefaultUserAgent().
-		SetCookieStringIfNeeded(getCookieString()).
+		SetCookieString(getCookieString()).
 		Get(url, true)
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCausef(err, "HttpCall(%s)", url)
