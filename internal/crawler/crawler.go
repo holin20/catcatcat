@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 
 	"github.com/holin20/catcatcat/internal/fetcher/costco"
@@ -57,12 +58,14 @@ func (c *Crawler) Kickoff(ctx context.Context) {
 	})
 
 	interval := ezgo.NonZeroOr(c.crawInterval, defaultCrawlInterval)
-	goHttpClient := &http.Client{}
+	goHttpClient := &http.Client{
+		Jar: ezgo.Arg1(cookiejar.New(nil)),
+	}
 	c.scheduler.Repeat(ctx, interval, "Crawler Single Fetcher", func() {
 		for i, entry := range c.crawlList {
 			itemModel, err := costco.FetchItemModel(
 				c.scope,
-				ezgo.NewHttpClientWithCustomClient(goHttpClient),
+				ezgo.NewHttpClientWithCustomClient(goHttpClient, true),
 				entry.Cat.Name,
 				entry.Costco.ItemId,
 				entry.Costco.CategoryId,

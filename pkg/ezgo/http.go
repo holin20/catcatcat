@@ -7,21 +7,29 @@ import (
 )
 
 type HttpClient struct {
-	headers map[string]string
-	client  *http.Client
+	headers      map[string]string
+	client       *http.Client
+	useCookieJar bool
 }
 
-func NewHttpClient() *HttpClient {
+func NewHttpClient(useCookieJar bool) *HttpClient {
 	return &HttpClient{
 		headers: make(map[string]string),
-		client:  &http.Client{},
+		client: &http.Client{
+			Jar: Arg1(cookiejar.New(nil)),
+		},
+		useCookieJar: useCookieJar,
 	}
 }
 
-func NewHttpClientWithCustomClient(client *http.Client) *HttpClient {
+func NewHttpClientWithCustomClient(client *http.Client, useCookieJar bool) *HttpClient {
+	if useCookieJar && client.Jar == nil {
+		client.Jar = Arg1(cookiejar.New(nil))
+	}
 	return &HttpClient{
-		headers: make(map[string]string),
-		client:  client,
+		headers:      make(map[string]string),
+		client:       client,
+		useCookieJar: useCookieJar,
 	}
 }
 
@@ -40,7 +48,7 @@ func (c *HttpClient) WithDefaultUserAgent() *HttpClient {
 	return c
 }
 
-func (c *HttpClient) Get(url string, respectToRespCookie bool) (string, error) {
+func (c *HttpClient) Get(url string) (string, error) {
 	req, err := http.NewRequest(methodGet, url, nil)
 	if err != nil {
 		return "", err
@@ -48,6 +56,13 @@ func (c *HttpClient) Get(url string, respectToRespCookie bool) (string, error) {
 
 	// Set custom headers
 	for key, value := range c.headers {
+		if key == headerCookie &&
+			c.useCookieJar &&
+			c.client.Jar != nil &&
+			len(c.client.Jar.Cookies(req.URL)) > 0 {
+			// we will handle cookies using jar instead
+			continue
+		}
 		req.Header.Set(key, value)
 	}
 
@@ -59,11 +74,7 @@ func (c *HttpClient) Get(url string, respectToRespCookie bool) (string, error) {
 		defer resp.Body.Close()
 	}
 
-	if resp != nil && respectToRespCookie {
-		if c.client.Jar == nil {
-			c.client.Jar, _ = cookiejar.New(nil)
-		}
-
+	if resp != nil && c.useCookieJar && c.client.Jar != nil {
 		respCookies := resp.Cookies()
 		if len(respCookies) > 0 {
 			c.client.Jar.SetCookies(req.URL, respCookies)
