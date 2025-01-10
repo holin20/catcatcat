@@ -9,6 +9,11 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	defaultEvalInterval   = time.Minute
+	defaultNotifyInterval = 24 * time.Hour
+)
+
 type alertState struct {
 	alerting bool
 
@@ -36,7 +41,9 @@ func NewMonitor(scope *ezgo.Scope) *Monitor {
 		scope:          scope,
 		scheduler:      ezgo.NewScheduler(scope),
 		notifier:       NewNotifier(),
-		notifyInterval: 24 * time.Hour,
+		notifyInterval: defaultNotifyInterval,
+		evalInterval:   defaultEvalInterval,
+		alertStates:    make(map[string]*alertState),
 	}
 	return m
 }
@@ -48,16 +55,27 @@ func (m *Monitor) WithRuleConfigs(ruleConfigs map[string]*RuleConfig) *Monitor {
 }
 
 func (m *Monitor) WithEvalInterval(evalInterval time.Duration) *Monitor {
-	m.evalInterval = evalInterval
+	if evalInterval > 0 {
+		m.evalInterval = evalInterval
+	}
+	return m
+}
+
+func (m *Monitor) WithNotifyInterval(notifyInterval time.Duration) *Monitor {
+	if m.notifyInterval > 0 {
+		m.notifyInterval = notifyInterval
+	}
 	return m
 }
 
 func (m *Monitor) Kickoff(ctx context.Context) {
-	evalInterval := m.evalInterval
-	if evalInterval == 0 {
-		evalInterval = time.Minute
-	}
-	m.scheduler.Repeat(ctx, evalInterval, "Monitor", func() {
+	m.scope.GetLogger().Info(
+		"Kicking off monitor!",
+		zap.Duration("eval_interval", m.evalInterval),
+		zap.Duration("notify_interval", m.notifyInterval),
+	)
+
+	m.scheduler.Repeat(ctx, m.evalInterval, "Monitor", func() {
 		if err := m.evalRules(ctx, time.Now()); err != nil {
 			ezgo.LogCausesf(m.scope.GetLogger(), err, "evalRules")
 		}
@@ -75,6 +93,7 @@ func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
 		if met {
 			m.alert(r, m.ruleConfigs[ruleId], queryResult, queryResultTime, now)
 		} else if rs := m.alertStates[ruleId]; rs != nil && rs.alerting {
+			m.scope.GetLogger().Info("Rule no longer meets the alerting criteria", zap.String("ruleId", ruleId))
 			rs.alerting = false // reset the alerting state.
 			// TODO - notify "alert dismissed"
 		}
@@ -112,7 +131,15 @@ func (m *Monitor) alert(
 		} else {
 			lastNotifyTime, _ := ezgo.Last(alertState.notifyHistory).Unpack()
 			if now.Sub(lastNotifyTime) > m.notifyInterval {
+				m.scope.GetLogger().Info(
+					"Alert notification interval passed. Alert again",
+					zap.String("ruleId", r.id),
+					zap.Time("last_notify_time", lastNotifyTime),
+					zap.Time("next_notify", lastNotifyTime.Add(m.notifyInterval)),
+				)
 				alertState.alerting = false
+			} else {
+				m.scope.GetLogger().Info("Inside alert notification interval. Do not notify", zap.String("ruleId", r.id))
 			}
 		}
 	}
@@ -120,16 +147,18 @@ func (m *Monitor) alert(
 	if !alertState.alerting {
 		alertState.alerting = true
 		alertState.notifyHistory = append(alertState.notifyHistory, ezgo.Tuple2(now, queryResult))
-	}
+		m.scope.GetLogger().Info("Notify this alert!", zap.String("ruleId", r.id))
 
-	if err := m.notifier.NotifyEmail(
-		r.GetName(),
-		ruleConfig,
-		queryTime,
-		queryResult,
-		queryResultTime,
-	); ezgo.IsErr(err) {
-		ezgo.LogCauses(m.scope.GetLogger(), err, "NotifyEmail")
+		// Notify!
+		if err := m.notifier.NotifyEmail(
+			r.GetName(),
+			ruleConfig,
+			queryTime,
+			queryResult,
+			queryResultTime,
+		); ezgo.IsErr(err) {
+			ezgo.LogCauses(m.scope.GetLogger(), err, "NotifyEmail")
+		}
 	}
 }
 
