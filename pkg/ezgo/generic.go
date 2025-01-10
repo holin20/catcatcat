@@ -61,7 +61,7 @@ func Arg3[T1, T2, T3, Trest any](arg1 T1, arg2 T2, arg3 T3, args ...Trest) T3 {
 	return arg3
 }
 
-func Last[T any](items ...T) T {
+func Last[T any](items []T) T {
 	if len(items) == 0 {
 		var zero T
 		return zero

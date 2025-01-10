@@ -1,6 +1,7 @@
 package monitor
 
 type RuleConfig struct {
+	RuleId        string
 	Name          string
 	QueryType     QueryType
 	QueryArgs     []any

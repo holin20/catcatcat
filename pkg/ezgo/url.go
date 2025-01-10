@@ -84,5 +84,5 @@ func (u *Url) GetQueryString() string {
 			"&",
 		)
 	}
-	return strings.Join(SliceFilterNonEmptyString([]string{resolved, u.queryStringPatch}), "&")
+	return strings.Join(SliceNonEmptyStringFilter([]string{resolved, u.queryStringPatch}), "&")
 }

@@ -8,13 +8,10 @@ import (
 )
 
 type Rule[V any] struct {
+	id        string
 	name      string
 	query     Queryable[V]
 	condition Condition[V]
-}
-
-func NewRule[V any]() *Rule[V] {
-	return &Rule[V]{}
 }
 
 func (r *Rule[V]) Eval(ctx context.Context, now time.Time) (bool, V, time.Time, error) {

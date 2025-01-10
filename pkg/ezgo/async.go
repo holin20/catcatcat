@@ -17,8 +17,8 @@ func Async[T any](fn func() T) *Awaitable[T] {
 	return awaitable
 }
 
-func Async2[T1, T2 any](fn func() (T1, T2)) *Awaitable[*tuple2[T1, T2]] {
-	awaitable, signal := NewAwaitable[*tuple2[T1, T2]]()
+func Async2[T1, T2 any](fn func() (T1, T2)) *Awaitable[*Tuple2_[T1, T2]] {
+	awaitable, signal := NewAwaitable[*Tuple2_[T1, T2]]()
 	go func() {
 		signal(Tuple2(fn()))
 	}()

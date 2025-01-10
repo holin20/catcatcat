@@ -53,8 +53,23 @@ func (a *Awaitable[T]) Await() T {
 	return a.v
 }
 
-func Await[T any](awaitables ...*Awaitable[T]) []T {
+func AwaitAll[T any](awaitables ...*Awaitable[T]) []T {
 	result := make([]T, len(awaitables))
+	wg := sync.WaitGroup{}
+	for i, a := range awaitables {
+		i := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			result[i] = a.Await()
+		}()
+	}
+	wg.Wait()
+	return result
+}
+
+func AwaitMapAll[K comparable, T any](awaitables map[K]*Awaitable[T]) map[K]T {
+	result := make(map[K]T)
 	wg := sync.WaitGroup{}
 	for i, a := range awaitables {
 		i := i

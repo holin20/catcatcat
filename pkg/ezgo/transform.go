@@ -25,3 +25,11 @@ func SliceApplyAsync[I, O any](input []I, apply func(int, I) O) []*Awaitable[O] 
 	}
 	return awaitables
 }
+
+func MapApplyAsync[K comparable, V, O any](input map[K]V, apply func(K, V) O) map[K]*Awaitable[O] {
+	awaitables := make(map[K]*Awaitable[O])
+	for i, x := range input {
+		awaitables[i] = Async(Bind2_1(apply, i, x))
+	}
+	return awaitables
+}

@@ -15,8 +15,9 @@ func main() {
 
 	ctx := context.Background()
 
-	var ruleConfigs = []*monitor.RuleConfig{
-		{
+	var ruleConfigs = map[string]*monitor.RuleConfig{
+		"0": {
+			RuleId:        "0",
 			Name:          example.CATS[0].Name,
 			QueryType:     monitor.ZapTail,
 			QueryArgs:     []any{"logs/cdp_0.txt", "ts", "price"},
@@ -26,7 +27,8 @@ func main() {
 			WatchCriteria:       "price < $1100.0",
 			QueryResultTemplate: "current price is $%f",
 		},
-		{
+		"1": {
+			RuleId:        "1",
 			Name:          example.CATS[1].Name,
 			QueryType:     monitor.ZapTail,
 			QueryArgs:     []any{"logs/cdp_1.txt", "ts", "inStock"},
