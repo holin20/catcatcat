@@ -17,7 +17,7 @@ func main() {
 
 	crawler := crawler.NewCrawler(scope).
 		WithCrawlList(example.CRAWL_LIST).
-		WithCrawlInterval(5 * time.Minute)
+		WithCrawlInterval(1 * time.Hour)
 
 	crawler.Kickoff(ctx)
 

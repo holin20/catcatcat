@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultCrawlInterval = 1 * time.Minute
+	defaultCrawlInterval = 1 * time.Hour
 )
 
 type CrawlListEntry = struct {
@@ -33,8 +33,9 @@ type Crawler struct {
 func NewCrawler(scope *ezgo.Scope) *Crawler {
 	scope = scope.WithLogger(scope.GetLogger().Named("Crawler"))
 	return &Crawler{
-		scheduler: ezgo.NewScheduler(scope),
-		scope:     scope,
+		scheduler:    ezgo.NewScheduler(scope),
+		crawInterval: defaultCrawlInterval,
+		scope:        scope,
 	}
 }
 
@@ -44,11 +45,15 @@ func (c *Crawler) WithCrawlList(crawlList []CrawlListEntry) *Crawler {
 }
 
 func (c *Crawler) WithCrawlInterval(crawlInterval time.Duration) *Crawler {
-	c.crawInterval = crawlInterval
+	if crawlInterval > 0 {
+		c.crawInterval = crawlInterval
+	}
 	return c
 }
 
 func (c *Crawler) Kickoff(ctx context.Context) {
+	c.scope.GetLogger().Info("Kicking off crawler!", zap.Duration("crawl_interval", c.crawInterval))
+
 	resultLoggers := ezgo.SliceApply(c.crawlList, func(i int, entry CrawlListEntry) *zap.Logger {
 		return ezgo.CloneLogger(
 			c.scope.GetLogger(),
@@ -57,11 +62,10 @@ func (c *Crawler) Kickoff(ctx context.Context) {
 		)
 	})
 
-	interval := ezgo.NonZeroOr(c.crawInterval, defaultCrawlInterval)
 	goHttpClient := &http.Client{
 		Jar: ezgo.Arg1(cookiejar.New(nil)),
 	}
-	c.scheduler.Repeat(ctx, interval, "Crawler Single Fetcher", func() {
+	c.scheduler.Repeat(ctx, c.crawInterval, "Crawler Single Fetcher", func() {
 		for i, entry := range c.crawlList {
 			itemModel, err := costco.FetchItemModel(
 				c.scope,
