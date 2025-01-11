@@ -26,6 +26,15 @@ type SqlBuilder struct {
 	orderByFields   Set[string]
 }
 
+func NewSqlBuilder() *SqlBuilder {
+	return &SqlBuilder{
+		selectFields:    MakeSet[string](),
+		aggregateFields: make(map[string]SqlAggregateType),
+		groupByFields:   MakeSet[string](),
+		orderByFields:   MakeSet[string](),
+	}
+}
+
 func (sb *SqlBuilder) Select(fields ...string) *SqlBuilder {
 	sb.selectFields.Add(fields...)
 	return sb
