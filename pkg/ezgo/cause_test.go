@@ -7,12 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var gScope *Scope = NewScopeWithDefaultLogger("TestScheduler")
-
 func TestCause(t *testing.T) {
+	scope := NewScopeWithDefaultLogger("TestScheduler")
+
 	// This test is not yet implemented.
 	err := NewCause(origin(), "origin")
-	LogCausesf(gScope.GetLogger(), err, "TestCauses")
+	LogCausesf(scope.GetLogger(), err, "TestCauses")
 	assert.False(t, true)
 }
 

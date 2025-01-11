@@ -86,7 +86,7 @@ func (c *cause) buildRootCausingString() string {
 			func() string { return rootCause.err.Error() },
 			func() string { return "[No Root Cause]" },
 		),
-		strings.Join(causesStr[1:], " <- "),
+		strings.Join(causesStr, " <- "),
 	)
 }
 
