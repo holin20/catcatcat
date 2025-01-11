@@ -9,6 +9,6 @@ type RuleConfig struct {
 	ConditionArgs float64
 
 	// for notification content
-	WatchCriteria       string
+	AlertCriteria       string
 	QueryResultTemplate string // result will be provided as %f
 }

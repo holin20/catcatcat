@@ -133,13 +133,18 @@ func (m *Monitor) alert(
 			if now.Sub(lastNotifyTime) > m.notifyInterval {
 				m.scope.GetLogger().Info(
 					"Alert notification interval passed. Alert again",
-					zap.String("ruleId", r.id),
+					zap.String("rule_id", r.id),
 					zap.Time("last_notify_time", lastNotifyTime),
-					zap.Time("next_notify", lastNotifyTime.Add(m.notifyInterval)),
 				)
 				alertState.alerting = false
 			} else {
-				m.scope.GetLogger().Info("Inside alert notification interval. Do not notify", zap.String("ruleId", r.id))
+				m.scope.GetLogger().Info(
+					"Inside alert notification interval. Do not notify",
+					zap.String("rule_id", r.id),
+					zap.Time("last_notify_time", lastNotifyTime),
+					zap.Time("next_notify_time", lastNotifyTime.Add(m.notifyInterval)),
+					zap.Duration("notify_interval", m.notifyInterval),
+				)
 			}
 		}
 	}

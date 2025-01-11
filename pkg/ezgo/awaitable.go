@@ -69,18 +69,25 @@ func AwaitAll[T any](awaitables ...*Awaitable[T]) []T {
 }
 
 func AwaitMapAll[K comparable, T any](awaitables map[K]*Awaitable[T]) map[K]T {
-	result := make(map[K]T)
+	flattenedResult := make([]T, len(awaitables))
+	seqToKey := make(map[int]K)
 	wg := sync.WaitGroup{}
-	for i, a := range awaitables {
-		i := i
+	var i int
+	for k, a := range awaitables {
+		seqToKey[i] = k
 		wg.Add(1)
-		go func() {
+		go func(seq int) {
 			defer wg.Done()
-			result[i] = a.Await()
-		}()
+			flattenedResult[seq] = a.Await()
+		}(i)
+		i++
 	}
 	wg.Wait()
-	return result
+	resultMap := make(map[K]T)
+	for i, r := range flattenedResult {
+		resultMap[seqToKey[i]] = r
+	}
+	return resultMap
 }
 
 func Await2[T1, T2 any](awaitable1 *Awaitable[T1], awaitable2 *Awaitable[T2]) (T1, T2) {

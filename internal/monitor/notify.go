@@ -28,18 +28,18 @@ func (n *Notifier) NotifyEmail(
 	result float64,
 	resultTime time.Time,
 ) error {
-	subject := "You've got a cat!"
+	subject := "You've got a cat! " + ruleName
 
 	currentStatus := fmt.Sprintf(ruleConfig.QueryResultTemplate, result)
 
 	body := fmt.Sprintf(
 		"%s was just detected to meet your watch criteria at %s (data point from %s ago)\n"+
-			"- Watch Criteria: %s\n"+
+			"- Alert Criteria: %s\n"+
 			"- Current Status: %s\n",
 		ruleName,
 		evalTime.Format(time.RFC1123),
 		evalTime.Sub(resultTime).String(),
-		ruleConfig.WatchCriteria,
+		ruleConfig.AlertCriteria,
 		currentStatus,
 	)
 

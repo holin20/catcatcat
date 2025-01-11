@@ -24,7 +24,7 @@ func main() {
 			ConditionType: monitor.LessCondition,
 			ConditionArgs: 1100.0,
 
-			WatchCriteria:       "price < $1100.0",
+			AlertCriteria:       "price < $1100.0",
 			QueryResultTemplate: "current price is $%f",
 		},
 		"1": {
@@ -35,7 +35,7 @@ func main() {
 			ConditionType: monitor.EqualCondition,
 			ConditionArgs: 1,
 
-			WatchCriteria:       "in stock",
+			AlertCriteria:       "in stock",
 			QueryResultTemplate: "in-stock status: %f",
 		},
 	}
