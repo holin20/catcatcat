@@ -55,3 +55,7 @@ func Fatal(msg string) {
 	fmt.Println(msg)
 	panic(msg)
 }
+
+func Fatalf(msgFmt string, args ...any) {
+	Fatal(fmt.Sprintf(msgFmt, args...))
+}

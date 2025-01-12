@@ -2,6 +2,7 @@ package ezgo
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,60 @@ const (
 	AggregateMin   SqlAggregateType = "MIN"
 	AggregateMax   SqlAggregateType = "MAX"
 )
+
+//
+
+type sqlColType uint8
+
+const (
+	sqlColTypeUnknown sqlColType = 0
+	sqlColTypeString  sqlColType = 1
+	sqlColTypeInt     sqlColType = 2
+	sqlColTypeFloat   sqlColType = 3
+)
+
+type sqlCol struct {
+	typ sqlColType
+	str string
+	i   int64
+	f   float64
+}
+
+func SqlColInt(i int64) *sqlCol {
+	return &sqlCol{
+		typ: sqlColTypeInt,
+		i:   i,
+	}
+}
+
+func SqlColString(s string) *sqlCol {
+	return &sqlCol{
+		typ: sqlColTypeString,
+		str: s,
+	}
+}
+
+func SqlColFloat(f float64) *sqlCol {
+	return &sqlCol{
+		typ: sqlColTypeString,
+		f:   f,
+	}
+}
+
+func (scs *sqlCol) String() string {
+	switch scs.typ {
+	case sqlColTypeString:
+		return fmt.Sprintf("'%s'", scs.str)
+	case sqlColTypeInt:
+		return strconv.FormatInt(scs.i, 10)
+	case sqlColTypeFloat:
+		return fmt.Sprintf("%f", scs.f)
+	}
+	Fatalf("Unsupported sql col type: %d", scs.typ)
+	return ""
+}
+
+//
 
 type SqlBuilder struct {
 	selectFields    Set[string]
@@ -97,4 +152,24 @@ func (sb *SqlBuilder) Build() (string, error) {
 	}
 
 	return strings.Join(SliceNonEmptyStringFilter(clauses), "\n"), nil
+}
+
+// INSERT INTO table_name (column1, column2, column3, ...)
+// VALUES (value1, value2, value3, ...);
+
+func BuildInsertSql(table string, cols map[string]*sqlCol) string {
+	colNames := make([]string, len(cols))
+	colValueStrings := make([]string, len(cols))
+	i := 0
+	for colName, colVal := range cols {
+		colNames[i] = colName
+		colValueStrings[i] = colVal.String()
+		i++
+	}
+	return fmt.Sprintf(
+		"INSERT INTO %s (%s) VALUES (%s)",
+		table,
+		strings.Join(colNames, ", "),
+		strings.Join(colValueStrings, ", "),
+	)
 }
