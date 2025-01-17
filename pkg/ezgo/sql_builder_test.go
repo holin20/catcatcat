@@ -34,7 +34,7 @@ func TestSqlBuilder(t *testing.T) {
 	// FROM table
 	// GROUP BY foo, bar`, sql)
 
-	sql := BuildInsertSql("table", map[string]*sqlCol{
+	sql := BuildInsertSql("table", map[string]*SqlCol{
 		"foo": SqlColString("123"),
 		"bar": SqlColInt(123),
 	})

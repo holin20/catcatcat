@@ -29,35 +29,35 @@ const (
 	sqlColTypeFloat   sqlColType = 3
 )
 
-type sqlCol struct {
+type SqlCol struct {
 	typ sqlColType
 	str string
 	i   int64
 	f   float64
 }
 
-func SqlColInt(i int64) *sqlCol {
-	return &sqlCol{
+func SqlColInt(i int64) *SqlCol {
+	return &SqlCol{
 		typ: sqlColTypeInt,
 		i:   i,
 	}
 }
 
-func SqlColString(s string) *sqlCol {
-	return &sqlCol{
+func SqlColString(s string) *SqlCol {
+	return &SqlCol{
 		typ: sqlColTypeString,
 		str: s,
 	}
 }
 
-func SqlColFloat(f float64) *sqlCol {
-	return &sqlCol{
+func SqlColFloat(f float64) *SqlCol {
+	return &SqlCol{
 		typ: sqlColTypeString,
 		f:   f,
 	}
 }
 
-func (scs *sqlCol) String() string {
+func (scs *SqlCol) String() string {
 	switch scs.typ {
 	case sqlColTypeString:
 		return fmt.Sprintf("'%s'", scs.str)
@@ -157,7 +157,7 @@ func (sb *SqlBuilder) Build() (string, error) {
 // INSERT INTO table_name (column1, column2, column3, ...)
 // VALUES (value1, value2, value3, ...);
 
-func BuildInsertSql(table string, cols map[string]*sqlCol) string {
+func BuildInsertSql(table string, cols map[string]*SqlCol) string {
 	colNames := make([]string, len(cols))
 	colValueStrings := make([]string, len(cols))
 	i := 0
