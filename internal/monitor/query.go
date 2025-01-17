@@ -78,3 +78,44 @@ func (e *ZapTailQuery[T]) Query(ctx context.Context, now time.Time) (T, time.Tim
 
 	return T(result.Float()), parsedTime, nil
 }
+
+// PostgresSqlQuery
+
+type PostgresSqlQuery[T float64] struct {
+	db        *ezgo.PostgresDB
+	sqlString string
+	timeField string
+	valField  string
+}
+
+func NewPostgresSqlQuery[T float64](
+	db *ezgo.PostgresDB,
+	sqlString string,
+	timeField string,
+	valField string,
+) *PostgresSqlQuery[T] {
+	return &PostgresSqlQuery[T]{db, sqlString, timeField, valField}
+}
+
+func (p *PostgresSqlQuery[T]) Query(ctx context.Context, now time.Time) (T, time.Time, error) {
+	colNames, rows, err := p.db.Query(p.sqlString)
+	if ezgo.IsErr(err) {
+		return 0, time.UnixMicro(0), ezgo.NewCause(err, "PostgresSqlQuery_Query")
+	}
+	timeColIndex, valColIndex := -1, -1
+	for i, name := range colNames {
+		switch name {
+		case p.timeField:
+			timeColIndex = i
+		case p.valField:
+			valColIndex = i
+		}
+	}
+	if timeColIndex == -1 || valColIndex == -1 {
+		return 0, time.UnixMicro(0), ezgo.NewCause(fmt.Errorf("timeColIndex/valColIndex not found"), "PostgresSqlQuery_locate_time_val_index")
+	}
+	val := rows[0][valColIndex].(float64)
+	ts := rows[0][timeColIndex].(int64)
+
+	return T(val), time.Unix(ts, 0), nil
+}
