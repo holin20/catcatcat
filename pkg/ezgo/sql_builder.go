@@ -27,6 +27,7 @@ const (
 	sqlColTypeString  sqlColType = 1
 	sqlColTypeInt     sqlColType = 2
 	sqlColTypeFloat   sqlColType = 3
+	sqlColTypeBool    sqlColType = 4
 )
 
 type SqlCol struct {
@@ -52,8 +53,15 @@ func SqlColString(s string) *SqlCol {
 
 func SqlColFloat(f float64) *SqlCol {
 	return &SqlCol{
-		typ: sqlColTypeString,
+		typ: sqlColTypeFloat,
 		f:   f,
+	}
+}
+
+func SqlColBool(b bool) *SqlCol {
+	return &SqlCol{
+		typ: sqlColTypeBool,
+		i:   int64(If(b, 1, 0)),
 	}
 }
 
@@ -65,6 +73,8 @@ func (scs *SqlCol) String() string {
 		return strconv.FormatInt(scs.i, 10)
 	case sqlColTypeFloat:
 		return fmt.Sprintf("%f", scs.f)
+	case sqlColTypeBool:
+		return If(scs.i == 1, "true", "false")
 	}
 	Fatalf("Unsupported sql col type: %d", scs.typ)
 	return ""
