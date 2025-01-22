@@ -18,6 +18,17 @@ const (
 	AggregateMax   SqlAggregateType = "MAX"
 )
 
+type PostgresqlNativeType string
+
+const (
+	PostgresqlTypeInt4   PostgresqlNativeType = "INT4"
+	PostgresqlTypeInt8   PostgresqlNativeType = "INT8"
+	PostgresqlTypeFloat4 PostgresqlNativeType = "FLOAT4"
+	PostgresqlTypeFloat8 PostgresqlNativeType = "FLOAT8"
+	PostgresqlTypeText   PostgresqlNativeType = "TEXT"
+	PostgresqlTypeBool   PostgresqlNativeType = "BOOL"
+)
+
 //
 
 type sqlColType uint8

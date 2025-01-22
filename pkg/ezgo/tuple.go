@@ -13,6 +13,16 @@ func (t *Tuple2_[T1, T2]) Unpack() (T1, T2) {
 	return t._1, t._2
 }
 
+type Pair_[T1, T2 any] Tuple2_[T1, T2]
+
+func Pair[T1, T2 any](_1 T1, _2 T2) *Pair_[T1, T2] {
+	return &Pair_[T1, T2]{_1, _2}
+}
+
+func (t *Pair_[T1, T2]) Unpack() (T1, T2) {
+	return t._1, t._2
+}
+
 type Tuple3_[T1, T2, T3 any] struct {
 	_1 T1
 	_2 T2
