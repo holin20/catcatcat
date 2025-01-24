@@ -3,6 +3,7 @@ package ezgo
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
@@ -10,10 +11,21 @@ import (
 
 const internalIdColName = "__id"
 
-func LoadAll[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T]) (map[int64]*T, error) {
+func Load[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T], ids ...int64) (map[int64]*T, error) {
 	// how to avoid allocating memory here?
 	colsToSelect := append([]string{internalIdColName}, st.FieldTags...)
-	sb, err := ezgo.NewSqlBuilder().Select(colsToSelect...).From(st.StructName).Build()
+	idConstraint := ""
+	if len(ids) > 0 {
+		idsInString := ezgo.SliceApply(ids, func(_ int, id int64) string {
+			return strconv.FormatInt(id, 10)
+		})
+		idConstraint = internalIdColName + " in (" + strings.Join(idsInString, ",") + ")"
+	}
+	sb, err := ezgo.NewSqlBuilder().
+		Select(colsToSelect...).
+		From(st.StructName).
+		Where(idConstraint).
+		Build()
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCause(err, "NewSqlBuilder")
 	}

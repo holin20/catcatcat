@@ -72,7 +72,7 @@ func actualizeTest() {
 	// err = orm.Create(db, &dog1, structTagSql)
 	// ezgo.AssertNoError(err, "ezgo.Create")
 
-	dogs, err := orm.LoadAll(db, structTagSql)
+	dogs, err := orm.Load(db, structTagSql, 6)
 	ezgo.AssertNoError(err, "orm.LoadFrom")
 
 	fmt.Println(ezgo.ToJsonString(dogs))
