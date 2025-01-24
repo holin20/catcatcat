@@ -7,7 +7,9 @@ import (
 )
 
 func main() {
-	PostgresSqlQueryTest()
+	actualizeTest()
+
+	//	PostgresSqlQueryTest()
 	// err := ezgo.GmailSender().
 	// 	From("catcatcattm@gmail.com").
 	// 	To("holin20@gmail.com").
@@ -43,6 +45,30 @@ func main() {
 	// ezgo.AssertNoError(err, "db query: "+sql)
 	// fmt.Println(colNames)
 	// fmt.Println(resultSets)
+}
+
+func actualizeTest() {
+	type Dog struct {
+		Name    string `sql:"name"`
+		Species int    `sql:"species"`
+		IsAlive bool   `sql:"is_alive"`
+	}
+
+	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+	defer db.Close()
+
+	structTagSql := ezgo.StructTag[Dog]("sql")
+
+	//ezgo.Actualize(db, ezgo.StructTag[Dog]("sql"))
+
+	dog1 := Dog{
+		Name:    "lalala",
+		Species: 45,
+		IsAlive: true,
+	}
+	err = ezgo.Create(db, &dog1, structTagSql)
+	ezgo.AssertNoError(err, "ezgo.Create")
 }
 
 func PostgresSqlQueryTest() {

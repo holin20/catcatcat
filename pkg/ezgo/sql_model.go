@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func LoadFrom[T any](db *PostgresDB, v *T, st *structSqlTag[T]) error {
+func LoadFrom[T any](db *PostgresDB, v *T, st *structTag[T]) error {
 	sb, err := NewSqlBuilder().Select(st.fieldNames...).From(st.structName).Build()
 	if IsErr(err) {
 		return NewCause(err, "NewSqlBuilder")
@@ -32,21 +32,21 @@ func LoadFrom[T any](db *PostgresDB, v *T, st *structSqlTag[T]) error {
 	return nil
 }
 
-func Actualize[T any](db *PostgresDB, st *structSqlTag[T]) error {
+func Actualize[T any](db *PostgresDB, st *structTag[T]) error {
 	createTableLines := make([]string, len(st.fieldNames))
 	for i, fieldName := range st.fieldNames {
 		psqlType, err := goTypeKindToPostgresqlType(st.fieldNameToType[fieldName])
 		if IsErr(err) {
 			return NewCausef(err, "goTypeKindToPostgresqlType")
 		}
-		createTableLines[i] = "\t" + fieldName + " " + psqlType
+		createTableLines[i] = "\t" + st.fieldNameToTag[fieldName] + " " + psqlType
 	}
 
 	createTableSql := fmt.Sprintf(
 		`
 CREATE TABLE %s (
 	__id SERIAL8 PRIMARY KEY,
-	%s
+%s
 )`,
 		st.structName,
 		strings.Join(createTableLines, ",\n"),
@@ -60,24 +60,23 @@ CREATE TABLE %s (
 	return nil
 }
 
-func Create[T any](db *PostgresDB, v *T, st *structSqlTag[T]) error {
+func Create[T any](db *PostgresDB, v *T, st *structTag[T]) error {
 	sqlCols := make(map[string]*SqlCol)
 
-	for _, fieldName := range st.fieldNames {
+	for fieldName, tag := range st.fieldNameToTag {
+		// TODO - avoid using reflection to extract field value
 		field := reflect.ValueOf(v).Elem().FieldByName(fieldName)
 		switch field.Kind() {
 		case reflect.Bool:
-			sqlCols[fieldName] = SqlColBool(field.Bool())
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
-			sqlCols[fieldName] = SqlColInt(field.Int()) // TODO - make SqlColInt support int4
-		case reflect.Int64:
-			sqlCols[fieldName] = SqlColInt(field.Int())
+			sqlCols[tag] = SqlColBool(field.Bool())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Int64:
+			sqlCols[tag] = SqlColInt(field.Int())
 		case reflect.Uint64:
 			return fmt.Errorf("uint64 is not supported. Use int64 instead")
 		case reflect.Float32, reflect.Float64:
-			sqlCols[fieldName] = SqlColFloat(field.Float())
+			sqlCols[tag] = SqlColFloat(field.Float())
 		case reflect.String:
-			sqlCols[fieldName] = SqlColString(field.String())
+			sqlCols[tag] = SqlColString(field.String())
 		default:
 			return fmt.Errorf("unsupported type: %s", field.Kind().String())
 		}
@@ -107,6 +106,8 @@ func goTypeKindToPostgresqlType(kind reflect.Kind) (string, error) {
 	}
 }
 
+// setStructField sets field value for objPtr. Currently use reflection.
+// TODO - use cached struct refelction to avoid runtime reflection.
 func setStructField[T any](objPtr *T, fieldName string, v any) error {
 	field := reflect.ValueOf(objPtr).Elem().FieldByName(fieldName)
 	if !field.IsValid() {
