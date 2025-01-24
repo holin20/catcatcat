@@ -8,30 +8,45 @@ import (
 	"github.com/holin20/catcatcat/pkg/ezgo"
 )
 
-func LoadFrom[T any](db *ezgo.PostgresDB, v *T, st *ezgo.StructTag[T]) error {
-	sb, err := ezgo.NewSqlBuilder().Select(st.FieldNames...).From(st.StructName).Build()
+const internalIdColName = "__id"
+
+func LoadAll[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T]) (map[int64]*T, error) {
+	// how to avoid allocating memory here?
+	colsToSelect := append([]string{internalIdColName}, st.FieldTags...)
+	sb, err := ezgo.NewSqlBuilder().Select(colsToSelect...).From(st.StructName).Build()
 	if ezgo.IsErr(err) {
-		return ezgo.NewCause(err, "NewSqlBuilder")
+		return nil, ezgo.NewCause(err, "NewSqlBuilder")
 	}
 	colNames, rows, err := db.Query(sb)
 	if ezgo.IsErr(err) {
-		return ezgo.NewCause(err, "db.Query")
+		return nil, ezgo.NewCause(err, "db.Query")
 	}
 
+	results := make(map[int64]*T, len(rows))
 	for _, r := range rows {
-		for i, colVal := range r {
-			colName := colNames[i]
+		var id int64 = -1
+		var v T
+		for ci, colVal := range r {
+			colName := colNames[ci]
+			if colName == internalIdColName {
+				id = colVal.(int64)
+				continue
+			}
 			fieldName := st.TagToFieldName[colName]
 			if fieldName == "" {
-				return ezgo.NewCausef(fmt.Errorf("no field name has tag: %s", colName), "tagToFieldName")
+				return nil, fmt.Errorf("no field name has tag: %s", colName)
 			}
-			if err := setStructField(v, fieldName, colVal); ezgo.IsErr(err) {
-				return ezgo.NewCause(err, "setStructField")
+			if err := setStructField(&v, fieldName, colVal); ezgo.IsErr(err) {
+				return nil, ezgo.NewCause(err, "setStructField")
 			}
 		}
+		if id == -1 {
+			return nil, fmt.Errorf("no id found for this row")
+		}
+		results[id] = &v
 	}
 
-	return nil
+	return results, nil
 }
 
 func Actualize[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T]) error {
@@ -47,10 +62,11 @@ func Actualize[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T]) error {
 	createTableSql := fmt.Sprintf(
 		`
 CREATE TABLE %s (
-	__id SERIAL8 PRIMARY KEY,
+	%s SERIAL8 PRIMARY KEY,
 %s
 )`,
 		st.StructName,
+		internalIdColName,
 		strings.Join(createTableLines, ",\n"),
 	)
 
@@ -91,12 +107,12 @@ func goTypeKindToPostgresqlType(kind reflect.Kind) (string, error) {
 	switch kind {
 	case reflect.Bool:
 		return "BOOL", nil
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32:
+	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint8, reflect.Uint16:
 		return "INT4", nil
-	case reflect.Int64:
+	case reflect.Int, reflect.Uint32, reflect.Int64:
 		return "INT8", nil
-	case reflect.Uint64:
-		return "", fmt.Errorf("Uint64 is not supported. Use int64 instead")
+	case reflect.Uint, reflect.Uint64:
+		return "", fmt.Errorf("Uint/Uint64 is not supported. Use int64 instead")
 	case reflect.Float32:
 		return "FLOAT4", nil
 	case reflect.Float64:
@@ -119,10 +135,26 @@ func setStructField[T any](objPtr *T, fieldName string, v any) error {
 		return fmt.Errorf("field of struct cannot set: %s", fieldName)
 	}
 	valReflect := reflect.ValueOf(v)
-	if !valReflect.Type().AssignableTo(field.Type()) {
-		return fmt.Errorf("cannot assing v to field %s", fieldName)
+	if !valReflect.Type().ConvertibleTo(field.Type()) {
+		return fmt.Errorf(
+			"cannot covert v(%v. type: %s) to field %s (type: %s)",
+			v,
+			valReflect.Type().String(),
+			fieldName,
+			field.Type().String(),
+		)
 	}
 
-	field.Set(valReflect)
+	// if !valReflect.Type().AssignableTo(field.Type()) {
+	// 	return fmt.Errorf(
+	// 		"cannot assing v(%v. type: %s) to field %s (type: %s)",
+	// 		v,
+	// 		valReflect.Type().String(),
+	// 		fieldName,
+	// 		field.Type().String(),
+	// 	)
+	// }
+
+	field.Set(valReflect.Convert(field.Type()))
 	return nil
 }

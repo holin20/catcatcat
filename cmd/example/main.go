@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
@@ -61,15 +62,20 @@ func actualizeTest() {
 
 	structTagSql := ezgo.NewStructTag[Dog]("sql")
 
-	//ezgo.Actualize(db, ezgo.StructTag[Dog]("sql"))
+	//orm.Actualize(db, structTagSql)
 
-	dog1 := Dog{
-		Name:    "lalala",
-		Species: 45,
-		IsAlive: true,
-	}
-	err = orm.Create(db, &dog1, structTagSql)
-	ezgo.AssertNoError(err, "ezgo.Create")
+	// dog1 := Dog{
+	// 	Name:    "lalala",
+	// 	Species: 45,
+	// 	IsAlive: true,
+	// }
+	// err = orm.Create(db, &dog1, structTagSql)
+	// ezgo.AssertNoError(err, "ezgo.Create")
+
+	dogs, err := orm.LoadAll(db, structTagSql)
+	ezgo.AssertNoError(err, "orm.LoadFrom")
+
+	fmt.Println(ezgo.ToJsonString(dogs))
 }
 
 func PostgresSqlQueryTest() {

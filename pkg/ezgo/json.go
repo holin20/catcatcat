@@ -1,6 +1,7 @@
 package ezgo
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/tidwall/gjson"
@@ -22,4 +23,8 @@ func GetFloatFromJSONPath(jsonStr string, jsonPath string) (float64, error) {
 	}
 
 	return result.Float(), nil
+}
+
+func ToJsonString(v any) string {
+	return string(Arg1(json.MarshalIndent(v, "", "  ")))
 }
