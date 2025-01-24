@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
+	orm "github.com/holin20/catcatcat/pkg/ezgo/orm"
 )
 
 func main() {
@@ -58,7 +59,7 @@ func actualizeTest() {
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
 
-	structTagSql := ezgo.StructTag[Dog]("sql")
+	structTagSql := ezgo.NewStructTag[Dog]("sql")
 
 	//ezgo.Actualize(db, ezgo.StructTag[Dog]("sql"))
 
@@ -67,7 +68,7 @@ func actualizeTest() {
 		Species: 45,
 		IsAlive: true,
 	}
-	err = ezgo.Create(db, &dog1, structTagSql)
+	err = orm.Create(db, &dog1, structTagSql)
 	ezgo.AssertNoError(err, "ezgo.Create")
 }
 

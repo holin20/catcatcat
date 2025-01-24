@@ -39,6 +39,10 @@ func (d *PostgresDB) Close() {
 	d.db.Close()
 }
 
+func (d *PostgresDB) Exec(query string, args ...any) (sql.Result, error) {
+	return d.db.Exec(query, args...)
+}
+
 func (d *PostgresDB) Insert(table string, cols map[string]*SqlCol) error {
 	insertSql := BuildInsertSql(table, cols)
 	_, err := d.db.Exec(insertSql)

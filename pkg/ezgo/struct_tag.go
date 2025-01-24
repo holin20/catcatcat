@@ -4,38 +4,38 @@ import (
 	"reflect"
 )
 
-type structTag[T any] struct {
-	fieldNameToTag  map[string]string
-	tagToFieldName  map[string]string
-	fieldNameToType map[string]reflect.Kind
-	fieldNames      []string
-	structName      string
+type StructTag[T any] struct {
+	FieldNameToTag  map[string]string
+	TagToFieldName  map[string]string
+	FieldNameToType map[string]reflect.Kind
+	FieldNames      []string
+	StructName      string
 }
 
-func StructTag[T any](tag string) *structTag[T] {
+func NewStructTag[T any](tag string) *StructTag[T] {
 	var v T
 	t := reflect.TypeOf(v)
 	Assertf(t.Kind() == reflect.Struct, "type %s is not struct", t.Name())
 
-	st := structTag[T]{
-		fieldNameToTag:  make(map[string]string),
-		fieldNameToType: make(map[string]reflect.Kind),
-		tagToFieldName:  make(map[string]string),
-		fieldNames:      make([]string, t.NumField()),
-		structName:      t.Name(),
+	st := StructTag[T]{
+		FieldNameToTag:  make(map[string]string),
+		FieldNameToType: make(map[string]reflect.Kind),
+		TagToFieldName:  make(map[string]string),
+		FieldNames:      make([]string, t.NumField()),
+		StructName:      t.Name(),
 	}
 
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		fieldTag := string(field.Tag.Get(tag))
 
-		st.fieldNameToTag[field.Name] = fieldTag
-		st.fieldNameToType[field.Name] = field.Type.Kind()
+		st.FieldNameToTag[field.Name] = fieldTag
+		st.FieldNameToType[field.Name] = field.Type.Kind()
 
-		Assertf(st.tagToFieldName[fieldTag] == "", "duplicated tag: %s", fieldTag)
-		st.tagToFieldName[string(field.Tag.Get(tag))] = field.Name
+		Assertf(st.TagToFieldName[fieldTag] == "", "duplicated tag: %s", fieldTag)
+		st.TagToFieldName[string(field.Tag.Get(tag))] = field.Name
 
-		st.fieldNames[i] = field.Name
+		st.FieldNames[i] = field.Name
 	}
 
 	return &st
