@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	actualizeTest()
+	//ormCreateTest()
+	ormLoadTest()
 
 	//	PostgresSqlQueryTest()
 	// err := ezgo.GmailSender().
@@ -49,13 +50,41 @@ func main() {
 	// fmt.Println(resultSets)
 }
 
-func actualizeTest() {
-	type Dog struct {
-		Name    string `sql:"name"`
-		Species int    `sql:"species"`
-		IsAlive bool   `sql:"is_alive"`
-	}
+type Dog struct {
+	Name    string `sql:"name"`
+	Species int    `sql:"species"`
+	IsAlive bool   `sql:"is_alive"`
+}
 
+func ormActualizeTest() {
+	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+	defer db.Close()
+
+	structTagSql := ezgo.NewStructTag[Dog]("sql")
+
+	orm.Actualize(db, structTagSql)
+}
+
+func ormCreateTest() {
+	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+	defer db.Close()
+
+	structTagSql := ezgo.NewStructTag[Dog]("sql")
+
+	orm.Actualize(db, structTagSql)
+
+	dog1 := Dog{
+		Name:    "lalala",
+		Species: 45,
+		IsAlive: true,
+	}
+	err = orm.Create(db, &dog1, structTagSql)
+	ezgo.AssertNoError(err, "ezgo.Create")
+}
+
+func ormLoadTest() {
 	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
@@ -72,7 +101,7 @@ func actualizeTest() {
 	// err = orm.Create(db, &dog1, structTagSql)
 	// ezgo.AssertNoError(err, "ezgo.Create")
 
-	dogs, err := orm.Load(db, structTagSql, 6)
+	dogs, err := orm.Load(db, structTagSql, 2)
 	ezgo.AssertNoError(err, "orm.LoadFrom")
 
 	fmt.Println(ezgo.ToJsonString(dogs))
