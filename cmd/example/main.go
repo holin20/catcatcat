@@ -61,9 +61,9 @@ func ormActualizeTest() {
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
 
-	structTagSql := ezgo.NewStructTag[Dog]("sql")
+	dogSchema := orm.NewSchema[Dog]()
 
-	orm.Actualize(db, structTagSql)
+	orm.Actualize(db, dogSchema)
 }
 
 func ormCreateTest() {
@@ -71,16 +71,15 @@ func ormCreateTest() {
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
 
-	structTagSql := ezgo.NewStructTag[Dog]("sql")
-
-	orm.Actualize(db, structTagSql)
+	dogSchema := orm.NewSchema[Dog]()
+	orm.Actualize(db, dogSchema)
 
 	dog1 := Dog{
 		Name:    "lalala",
 		Species: 45,
 		IsAlive: true,
 	}
-	err = orm.Create(db, &dog1, structTagSql)
+	err = orm.Create(db, dogSchema, &dog1)
 	ezgo.AssertNoError(err, "ezgo.Create")
 }
 
@@ -89,7 +88,7 @@ func ormLoadTest() {
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
 
-	structTagSql := ezgo.NewStructTag[Dog]("sql")
+	dogSchema := orm.NewSchema[Dog]()
 
 	//orm.Actualize(db, structTagSql)
 
@@ -101,7 +100,7 @@ func ormLoadTest() {
 	// err = orm.Create(db, &dog1, structTagSql)
 	// ezgo.AssertNoError(err, "ezgo.Create")
 
-	dogs, err := orm.Load(db, structTagSql, 2)
+	dogs, err := orm.Load(db, dogSchema, 2)
 	ezgo.AssertNoError(err, "orm.LoadFrom")
 
 	fmt.Println(ezgo.ToJsonString(dogs))

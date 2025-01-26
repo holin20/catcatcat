@@ -1,19 +1,22 @@
-package ezgo
+package orm
 
 import (
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/holin20/catcatcat/pkg/ezgo"
 )
 
 const internalIdColName = "__id"
+const internalTimeColName = "__ts" // unix time in milliseconds
 
-func Load[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T], ids ...int64) (map[int64]*T, error) {
+func Load[T any](db *ezgo.PostgresDB, schema *Schema[T], ids ...int64) (map[int64]*T, error) {
 	// how to avoid allocating memory here?
-	colsToSelect := append([]string{internalIdColName}, st.FieldTags...)
+	internalCols := []string{internalIdColName, internalTimeColName}
+	colsToSelect := append(internalCols, schema.cols...)
 	idConstraint := ""
 	if len(ids) > 0 {
 		idsInString := ezgo.SliceApply(ids, func(_ int, id int64) string {
@@ -23,7 +26,7 @@ func Load[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T], ids ...int64) (map[
 	}
 	sb, err := ezgo.NewSqlBuilder().
 		Select(colsToSelect...).
-		From(st.StructName).
+		From(schema.tableName).
 		Where(idConstraint).
 		Build()
 	if ezgo.IsErr(err) {
@@ -44,7 +47,7 @@ func Load[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T], ids ...int64) (map[
 				id = colVal.(int64)
 				continue
 			}
-			fieldName := st.TagToFieldName[colName]
+			fieldName := schema.colToField[colName]
 			if fieldName == "" {
 				return nil, fmt.Errorf("no field name has tag: %s", colName)
 			}
@@ -61,24 +64,26 @@ func Load[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T], ids ...int64) (map[
 	return results, nil
 }
 
-func Actualize[T any](db *ezgo.PostgresDB, st *ezgo.StructTag[T]) error {
-	createTableLines := make([]string, len(st.FieldNames))
-	for i, fieldName := range st.FieldNames {
-		psqlType, err := goTypeKindToPostgresqlType(st.FieldNameToType[fieldName])
+func Actualize[T any](db *ezgo.PostgresDB, schema *Schema[T]) error {
+	createTableLines := make([]string, len(schema.fields))
+	for i, fieldName := range schema.fields {
+		psqlType, err := goTypeKindToPostgresqlType(schema.fieldToGoType[fieldName])
 		if ezgo.IsErr(err) {
 			return ezgo.NewCausef(err, "goTypeKindToPostgresqlType")
 		}
-		createTableLines[i] = "\t" + st.FieldNameToTag[fieldName] + " " + psqlType
+		createTableLines[i] = "\t" + schema.fieldToCol[fieldName] + " " + psqlType
 	}
 
 	createTableSql := fmt.Sprintf(
 		`
 CREATE TABLE %s (
 	%s SERIAL8 PRIMARY KEY,
+	%s INT8,
 %s
 )`,
-		st.StructName,
+		schema.tableName,
 		internalIdColName,
+		internalTimeColName,
 		strings.Join(createTableLines, ",\n"),
 	)
 
@@ -90,10 +95,10 @@ CREATE TABLE %s (
 	return nil
 }
 
-func Create[T any](db *ezgo.PostgresDB, v *T, st *ezgo.StructTag[T]) error {
+func Create[T any](db *ezgo.PostgresDB, schema *Schema[T], v *T) error {
 	sqlCols := make(map[string]*ezgo.SqlCol)
 
-	for fieldName, tag := range st.FieldNameToTag {
+	for fieldName, tag := range schema.fieldToCol {
 		// TODO - avoid using reflection to extract field value
 		field := reflect.ValueOf(v).Elem().FieldByName(fieldName)
 		switch field.Kind() {
@@ -112,7 +117,9 @@ func Create[T any](db *ezgo.PostgresDB, v *T, st *ezgo.StructTag[T]) error {
 		}
 	}
 
-	return db.Insert(st.StructName, sqlCols)
+	sqlCols[internalTimeColName] = ezgo.SqlColInt(time.Now().UnixMilli())
+
+	return db.Insert(schema.tableName, sqlCols)
 }
 
 func goTypeKindToPostgresqlType(kind reflect.Kind) (string, error) {
