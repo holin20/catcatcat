@@ -1,7 +1,7 @@
 package schema
 
 type CostcoFetcher struct {
-	CatId string `sql:"cat_id"`
+	CatId string `sql:"cat_id" unique:"true"`
 
 	ProductId  string `sql:"product_id"`
 	ItemId     string `sql:"item_id"`

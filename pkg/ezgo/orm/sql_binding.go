@@ -67,11 +67,19 @@ func Load[T any](db *ezgo.PostgresDB, schema *Schema[T], ids ...int64) (map[int6
 func Actualize[T any](db *ezgo.PostgresDB, schema *Schema[T]) error {
 	createTableLines := make([]string, len(schema.fields))
 	for i, fieldName := range schema.fields {
-		psqlType, err := goTypeKindToPostgresqlType(schema.fieldToGoType[fieldName])
+		psqlType, err := goTypeKindToPostgresqlType(schema.fieldProperty[fieldName].goType)
 		if ezgo.IsErr(err) {
 			return ezgo.NewCausef(err, "goTypeKindToPostgresqlType")
 		}
-		createTableLines[i] = "\t" + schema.fieldToCol[fieldName] + " " + psqlType
+		createTableLine := fmt.Sprintf(
+			"\t%s %s",
+			schema.fieldProperty[fieldName].sqlColName,
+			psqlType,
+		)
+		if schema.fieldProperty[fieldName].isUinque {
+			createTableLine += " UNIQUE"
+		}
+		createTableLines[i] = createTableLine
 	}
 
 	createTableSql := fmt.Sprintf(
@@ -98,20 +106,20 @@ CREATE TABLE %s (
 func Create[T any](db *ezgo.PostgresDB, schema *Schema[T], v *T) error {
 	sqlCols := make(map[string]*ezgo.SqlCol)
 
-	for fieldName, tag := range schema.fieldToCol {
+	for fieldName, property := range schema.fieldProperty {
 		// TODO - avoid using reflection to extract field value
 		field := reflect.ValueOf(v).Elem().FieldByName(fieldName)
 		switch field.Kind() {
 		case reflect.Bool:
-			sqlCols[tag] = ezgo.SqlColBool(field.Bool())
+			sqlCols[property.sqlColName] = ezgo.SqlColBool(field.Bool())
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Int64:
-			sqlCols[tag] = ezgo.SqlColInt(field.Int())
+			sqlCols[property.sqlColName] = ezgo.SqlColInt(field.Int())
 		case reflect.Uint64:
 			return fmt.Errorf("uint64 is not supported. Use int64 instead")
 		case reflect.Float32, reflect.Float64:
-			sqlCols[tag] = ezgo.SqlColFloat(field.Float())
+			sqlCols[property.sqlColName] = ezgo.SqlColFloat(field.Float())
 		case reflect.String:
-			sqlCols[tag] = ezgo.SqlColString(field.String())
+			sqlCols[property.sqlColName] = ezgo.SqlColString(field.String())
 		default:
 			return fmt.Errorf("unsupported type: %s", field.Kind().String())
 		}
