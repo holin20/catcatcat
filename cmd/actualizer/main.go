@@ -40,19 +40,26 @@ var (
 )
 
 func main() {
+	actualData()
+}
+
+func actualizeSchemas() {
 	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 
-	// err = orm.Actualize(db, orm.NewSchema[schema.Cat]())
-	// ezgo.AssertNoError(err, "actualize cat")
+	err = orm.Actualize(db, orm.NewSchema[schema.Cat]())
+	ezgo.AssertNoError(err, "actualize cat")
 
-	// err = orm.Actualize(db, orm.NewSchema[schema.Cdp]())
-	// ezgo.AssertNoError(err, "actualize cdp")
+	err = orm.Actualize(db, orm.NewSchema[schema.Cdp]())
+	ezgo.AssertNoError(err, "actualize cdp")
 
-	// err = orm.Actualize(db, orm.NewSchema[schema.CostcoFetcher]())
-	// ezgo.AssertNoError(err, "actualize CostcoFetcher")
+	err = orm.Actualize(db, orm.NewSchema[schema.CostcoFetcher]())
+	ezgo.AssertNoError(err, "actualize CostcoFetcher")
+}
 
-	ezgo.AssertNoError(err, "orm.Create cat")
+func actualData() {
+	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 
 	for _, cat := range CATS {
 		err := orm.Create(db, orm.NewSchema[schema.Cat](), cat)
