@@ -93,6 +93,11 @@ func fetchJsonPathes(httpClient *ezgo.HttpClient, url string, pathes []string) (
 	body, err := httpClient.
 		WithDefaultUserAgent().
 		SetCookieString(getCookieString()).
+		SetHeader("accept-language", "en-US,en;q=0.9").
+		SetHeader("sec-ch-ua", `Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"`).
+		SetHeader("sec-ch-ua-mobile", "?0").
+		SetHeader("sec-ch-ua-platform", `"macOS"`).
+		SetHeader("sec-fetch-dest", "document").
 		Get(url)
 	if ezgo.IsErr(err) {
 		return nil, ezgo.NewCausef(err, "HttpCall(%s)", url)
