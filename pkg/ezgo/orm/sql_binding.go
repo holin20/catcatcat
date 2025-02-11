@@ -64,6 +64,59 @@ func Load[T any](db *ezgo.PostgresDB, schema *Schema[T], ids ...int64) (map[int6
 	return results, nil
 }
 
+// LoadLastN queries the last N items by creation time sort by creation time in desc order
+func LoadLastN[T any](
+	db *ezgo.PostgresDB,
+	schema *Schema[T],
+	constraint *T,
+	count int,
+) ([]*ezgo.Pair_[int64, *T], error) {
+	// how to avoid allocating memory here?
+	internalCols := []string{internalIdColName, internalTimeColName}
+	colsToSelect := append(internalCols, schema.cols...)
+	// TODO - apply constraint
+	sb, err := ezgo.NewSqlBuilder().
+		Select(colsToSelect...).
+		From(schema.tableName).
+		//Where(idConstraint). // TODO -  apply constraint
+		OrderBy(internalTimeColName). // TODO - support ascent/descent
+		Limit(count).
+		Build()
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "NewSqlBuilder")
+	}
+	colNames, rows, err := db.Query(sb)
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "db.Query")
+	}
+
+	var results []*ezgo.Pair_[int64, *T]
+	for _, r := range rows {
+		var id int64 = -1
+		var v T
+		for ci, colVal := range r {
+			colName := colNames[ci]
+			if colName == internalIdColName {
+				id = colVal.(int64)
+				continue
+			}
+			fieldName := schema.colToField[colName]
+			if fieldName == "" {
+				return nil, fmt.Errorf("no field name has tag: %s", colName)
+			}
+			if err := setStructField(&v, fieldName, colVal); ezgo.IsErr(err) {
+				return nil, ezgo.NewCause(err, "setStructField")
+			}
+		}
+		if id == -1 {
+			return nil, fmt.Errorf("no id found for this row")
+		}
+		results = append(results, ezgo.Pair(id, &v))
+	}
+
+	return results, nil
+}
+
 func Actualize[T any](db *ezgo.PostgresDB, schema *Schema[T]) error {
 	createTableLines := make([]string, len(schema.fields))
 	for i, fieldName := range schema.fields {

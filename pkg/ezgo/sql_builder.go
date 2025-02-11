@@ -100,6 +100,7 @@ type SqlBuilder struct {
 	constraint      string
 	groupByFields   Set[string]
 	orderByFields   Set[string]
+	limit           int
 }
 
 func NewSqlBuilder() *SqlBuilder {
@@ -141,6 +142,11 @@ func (sb *SqlBuilder) OrderBy(fields ...string) *SqlBuilder {
 	return sb
 }
 
+func (sb *SqlBuilder) Limit(count int) *SqlBuilder {
+	sb.limit = count
+	return sb
+}
+
 func (sb *SqlBuilder) Build() (string, error) {
 	if sb.selectFields.Empty() {
 		return "", fmt.Errorf("select fields empty")
@@ -164,12 +170,19 @@ func (sb *SqlBuilder) Build() (string, error) {
 	}
 	orderByClause := If(!sb.orderByFields.Empty(), "ORDER BY "+strings.Join(sb.orderByFields.ToSlice(), ", "), "")
 
+	// limit
+	limitClause := ""
+	if sb.limit > 0 {
+		limitClause = fmt.Sprintf("limit %d", sb.limit)
+	}
+
 	clauses := []string{
 		selectClause,
 		fromClause,
 		whereClause,
 		groupByClause,
 		orderByClause,
+		limitClause,
 	}
 
 	return strings.Join(SliceNonEmptyStringFilter(clauses), "\n"), nil

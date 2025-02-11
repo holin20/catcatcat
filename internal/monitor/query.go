@@ -7,7 +7,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/holin20/catcatcat/internal/ent/schema"
 	"github.com/holin20/catcatcat/pkg/ezgo"
+	"github.com/holin20/catcatcat/pkg/ezgo/orm"
+)
+
+var (
+	cdpSchema = orm.NewSchema[schema.Cdp]()
 )
 
 type Queryable[V any] interface {
@@ -118,4 +124,31 @@ func (p *PostgresSqlQuery[T]) Query(ctx context.Context, now time.Time) (T, time
 	ts := rows[0][timeColIndex].(int64)
 
 	return T(val), time.Unix(ts, 0), nil
+}
+
+// PostgresSqlQuery
+
+type EntCdpQuery[T schema.Cdp] struct {
+	db    *ezgo.PostgresDB
+	catId string
+}
+
+func NewEntCdpQuery[T schema.Cdp](
+	db *ezgo.PostgresDB,
+	catId string,
+) *EntCdpQuery[T] {
+	return &EntCdpQuery[T]{db: db, catId: catId}
+}
+
+func (q *EntCdpQuery[T]) Query(ctx context.Context, now time.Time) (T, time.Time, error) {
+	results, err := orm.LoadLastN(q.db, cdpSchema, &schema.Cdp{CatId: q.catId}, 1)
+	var zero T
+	if ezgo.IsErr(err) {
+		return zero, time.UnixMicro(0), ezgo.NewCause(err, "LoadLastN")
+	}
+	if len(results) != 0 {
+		return zero, time.UnixMicro(0), fmt.Errorf("zero result from LoadLastN")
+	}
+	ts, cdp := results[0].Unpack()
+	return T(*cdp), time.UnixMilli(ts), nil
 }

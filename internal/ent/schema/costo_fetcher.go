@@ -7,7 +7,5 @@ type CostcoFetcher struct {
 	ItemId     string `sql:"item_id"`
 	CategoryId string `sql:"category_id"`
 
-	Name string `sql:"name"`
-
-	QueryStringPath string `sql:"query_string_path"`
+	QueryStringPatch string `sql:"query_string_patch"`
 }
