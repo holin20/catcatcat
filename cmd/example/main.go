@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/holin20/catcatcat/internal/ent/schema"
+	"github.com/holin20/catcatcat/internal/monitor"
 	"github.com/holin20/catcatcat/pkg/ezgo"
 	orm "github.com/holin20/catcatcat/pkg/ezgo/orm"
 )
@@ -13,7 +15,9 @@ func main() {
 	//ormCreateTest()
 	//ormLoadTest()
 
-	testLoadLastN()
+	//testLoadLastN()
+
+	testEntCdpQuery()
 
 	//	PostgresSqlQueryTest()
 	// err := ezgo.GmailSender().
@@ -51,6 +55,16 @@ func main() {
 	// ezgo.AssertNoError(err, "db query: "+sql)
 	// fmt.Println(colNames)
 	// fmt.Println(resultSets)
+}
+
+func testEntCdpQuery() {
+	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+	defer db.Close()
+
+	cdp, _, err := monitor.NewEntCdpQuery(db, "1").Query(context.Background(), time.Now())
+	ezgo.AssertNoError(err, "NewEntCdpQuery")
+	fmt.Println(ezgo.ToJsonString(cdp))
 }
 
 func testLoadLastN() {

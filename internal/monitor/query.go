@@ -146,7 +146,7 @@ func (q *EntCdpQuery[T]) Query(ctx context.Context, now time.Time) (T, time.Time
 	if ezgo.IsErr(err) {
 		return zero, time.UnixMicro(0), ezgo.NewCause(err, "LoadLastN")
 	}
-	if len(results) != 0 {
+	if len(results) == 0 {
 		return zero, time.UnixMicro(0), fmt.Errorf("zero result from LoadLastN")
 	}
 	ts, cdp := results[0].Unpack()
