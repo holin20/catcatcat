@@ -64,6 +64,36 @@ func Load[T any](db *ezgo.PostgresDB, schema *Schema[T], ids ...int64) (map[int6
 	return results, nil
 }
 
+func getConstraint[T any](schema *Schema[T], v *T) (string, error) {
+	if schema.partitionKeyCol == "" {
+		return "", fmt.Errorf("no queryable partition field")
+	}
+	fieldName := schema.colToField[schema.partitionKeyCol]
+	if fieldName == "" {
+		return "", fmt.Errorf("col not found: %s", schema.partitionKeyCol)
+	}
+
+	field := reflect.ValueOf(v).Elem().FieldByName(fieldName)
+	switch field.Kind() {
+	case reflect.Bool:
+		if field.Bool() {
+			return schema.partitionKeyCol, nil
+		} else {
+			return "NOT " + schema.partitionKeyCol, nil
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Int64:
+		return fmt.Sprintf("%s = %d", schema.partitionKeyCol, field.Int()), nil
+	case reflect.Uint64:
+		return "", fmt.Errorf("uint64 is not supported. Use int64 instead")
+	case reflect.Float32, reflect.Float64:
+		return "", fmt.Errorf("float can't be partition key")
+	case reflect.String:
+		return fmt.Sprintf("%s = '%s'", schema.partitionKeyCol, field.String()), nil
+	default:
+		return "", fmt.Errorf("unsupported type: %s", field.Kind().String())
+	}
+}
+
 // LoadLastN queries the last N items by creation time sort by creation time in desc order
 func LoadLastN[T any](
 	db *ezgo.PostgresDB,
@@ -72,13 +102,16 @@ func LoadLastN[T any](
 	count int,
 ) ([]*ezgo.Pair_[int64, *T], error) {
 	// how to avoid allocating memory here?
-	internalCols := []string{internalIdColName, internalTimeColName}
+	internalCols := []string{internalTimeColName}
 	colsToSelect := append(internalCols, schema.cols...)
-	// TODO - apply constraint
+	whereConstraint, err := getConstraint(schema, constraint)
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "getConstraint")
+	}
 	sb, err := ezgo.NewSqlBuilder().
 		Select(colsToSelect...).
 		From(schema.tableName).
-		//Where(idConstraint). // TODO -  apply constraint
+		Where(whereConstraint).
 		OrderBy(internalTimeColName). // TODO - support ascent/descent
 		Limit(count).
 		Build()
@@ -92,12 +125,12 @@ func LoadLastN[T any](
 
 	var results []*ezgo.Pair_[int64, *T]
 	for _, r := range rows {
-		var id int64 = -1
+		var ts int64 = -1
 		var v T
 		for ci, colVal := range r {
 			colName := colNames[ci]
-			if colName == internalIdColName {
-				id = colVal.(int64)
+			if colName == internalTimeColName {
+				ts = colVal.(int64)
 				continue
 			}
 			fieldName := schema.colToField[colName]
@@ -108,10 +141,10 @@ func LoadLastN[T any](
 				return nil, ezgo.NewCause(err, "setStructField")
 			}
 		}
-		if id == -1 {
-			return nil, fmt.Errorf("no id found for this row")
+		if ts == -1 {
+			return nil, fmt.Errorf("no ts found for this row")
 		}
-		results = append(results, ezgo.Pair(id, &v))
+		results = append(results, ezgo.Pair(ts, &v))
 	}
 
 	return results, nil

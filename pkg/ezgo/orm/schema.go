@@ -8,6 +8,7 @@ import (
 
 const sqlColTag = "sql"
 const isUniqueTag = "unique"
+const partitionKeyTag = "pk"
 
 type fieldProperty struct {
 	sqlColName string
@@ -19,9 +20,11 @@ type Schema[T any] struct {
 	fieldProperty map[string]fieldProperty
 
 	colToField map[string]string
-	cols       []string
-	fields     []string
+	cols       []string // sql cols
+	fields     []string // golang struct fields
 	tableName  string
+
+	partitionKeyCol string
 }
 
 func NewSchema[T any]() *Schema[T] {
@@ -39,9 +42,15 @@ func NewSchema[T any]() *Schema[T] {
 		field := t.Field(i)
 		col := string(field.Tag.Get(sqlColTag))
 		isUnqiue := field.Tag.Get(isUniqueTag) == "true"
+		isPartitionKey := field.Tag.Get(partitionKeyTag) == "true"
 
 		if col == "" {
 			continue // warn on empty tag?
+		}
+
+		if isPartitionKey {
+			ezgo.Assertf(schema.partitionKeyCol == "", "Duplicated partition key: %s (previous %s)", col, schema.partitionKeyCol)
+			schema.partitionKeyCol = col
 		}
 
 		schema.fieldProperty[field.Name] = fieldProperty{

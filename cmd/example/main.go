@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/holin20/catcatcat/internal/ent/schema"
 	"github.com/holin20/catcatcat/pkg/ezgo"
 	orm "github.com/holin20/catcatcat/pkg/ezgo/orm"
 )
 
 func main() {
 	//ormCreateTest()
-	ormLoadTest()
+	//ormLoadTest()
+
+	testLoadLastN()
 
 	//	PostgresSqlQueryTest()
 	// err := ezgo.GmailSender().
@@ -48,6 +51,20 @@ func main() {
 	// ezgo.AssertNoError(err, "db query: "+sql)
 	// fmt.Println(colNames)
 	// fmt.Println(resultSets)
+}
+
+func testLoadLastN() {
+	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+	defer db.Close()
+
+	results, err := orm.LoadLastN(db, orm.NewSchema[schema.Cdp](), &schema.Cdp{CatId: "1"}, 1)
+	ezgo.AssertNoError(err, "LoadLastN")
+
+	for _, v := range results {
+		_, y := v.Unpack()
+		fmt.Println(ezgo.ToJsonString(y))
+	}
 }
 
 type Dog struct {
