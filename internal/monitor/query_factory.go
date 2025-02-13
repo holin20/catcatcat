@@ -13,6 +13,7 @@ const (
 	FloatCsvReader QueryType = 1
 	ZapTail        QueryType = 2
 	PostgreSql     QueryType = 3
+	EntCdp         QueryType = 4
 )
 
 func BuildQuery[T float64](
@@ -33,12 +34,19 @@ func BuildQuery[T float64](
 		q := NewZapTailQuery[T](logFilePath, timeField, valField)
 		return q, nil
 	case PostgreSql:
-		ezgo.Assertf(len(args) == 4, "len(args) should be euqal to %d for type %d", 3, typ)
+		ezgo.Assertf(len(args) == 4, "len(args) should be euqal to %d for type %d", 4, typ)
 		db := ezgo.AssertType[*ezgo.PostgresDB](args[0], "arg0 should be PostgresDB")
 		sqlString := ezgo.AssertType[string](args[1], "arg1 should be sqlString")
 		timeField := ezgo.AssertType[string](args[2], "arg2 should be string")
 		valField := ezgo.AssertType[string](args[3], "arg3 should be string")
 		q := NewPostgresSqlQuery[T](db, sqlString, timeField, valField)
+		return q, nil
+	case EntCdp:
+		ezgo.Assertf(len(args) == 3, "len(args) should be euqal to %d for type %d", 3, typ)
+		db := ezgo.AssertType[*ezgo.PostgresDB](args[0], "arg0 should be PostgresDB")
+		catId := ezgo.AssertType[string](args[1], "arg1 should be string")
+		cdpField := ezgo.AssertType[CdpField](args[2], "arg2 should be string")
+		q := NewEntCdpQuery[T](db, catId, cdpField)
 		return q, nil
 	}
 	return nil, fmt.Errorf("non-supported query type: %d", typ)

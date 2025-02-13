@@ -21,7 +21,7 @@ func main() {
 
 	crawler.Kickoff(ctx)
 
-	time.Sleep(27 * time.Hour * 7)
+	time.Sleep(24 * time.Hour * 7)
 
 	crawler.Terminate()
 }

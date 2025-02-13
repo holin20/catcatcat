@@ -24,6 +24,7 @@ type Monitor struct {
 	scope     *ezgo.Scope
 	scheduler *ezgo.Scheduler
 	notifier  *Notifier
+	db        *ezgo.PostgresDB
 
 	ruleConfigs map[string]*RuleConfig
 
@@ -35,7 +36,7 @@ type Monitor struct {
 	notifyInterval time.Duration
 }
 
-func NewMonitor(scope *ezgo.Scope) *Monitor {
+func NewMonitor(scope *ezgo.Scope, db *ezgo.PostgresDB) *Monitor {
 	scope = scope.WithLogger(scope.GetLogger().Named("Monitor"))
 	m := &Monitor{
 		scope:          scope,
@@ -44,6 +45,7 @@ func NewMonitor(scope *ezgo.Scope) *Monitor {
 		notifyInterval: defaultNotifyInterval,
 		evalInterval:   defaultEvalInterval,
 		alertStates:    make(map[string]*alertState),
+		db:             db,
 	}
 	return m
 }
