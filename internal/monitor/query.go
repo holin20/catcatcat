@@ -128,27 +128,43 @@ func (p *PostgresSqlQuery[T]) Query(ctx context.Context, now time.Time) (T, time
 
 // PostgresSqlQuery
 
-type EntCdpQuery[T schema.Cdp] struct {
+type CdpField int
+
+const (
+	CdpPrice CdpField = iota
+	CdpInStock
+)
+
+type EntCdpQuery[T float64] struct {
 	db    *ezgo.PostgresDB
 	catId string
+	field CdpField
 }
 
-func NewEntCdpQuery[T schema.Cdp](
+func NewEntCdpQuery[T float64](
 	db *ezgo.PostgresDB,
 	catId string,
+	field CdpField,
 ) *EntCdpQuery[T] {
-	return &EntCdpQuery[T]{db: db, catId: catId}
+	return &EntCdpQuery[T]{db: db, catId: catId, field: field}
 }
 
 func (q *EntCdpQuery[T]) Query(ctx context.Context, now time.Time) (T, time.Time, error) {
 	results, err := orm.LoadLastN(q.db, cdpSchema, &schema.Cdp{CatId: q.catId}, 1)
 	var zero T
 	if ezgo.IsErr(err) {
-		return zero, time.UnixMicro(0), ezgo.NewCause(err, "LoadLastN")
+		return zero, time.UnixMilli(0), ezgo.NewCause(err, "LoadLastN")
 	}
 	if len(results) == 0 {
-		return zero, time.UnixMicro(0), fmt.Errorf("zero result from LoadLastN")
+		return zero, time.UnixMilli(0), fmt.Errorf("zero result from LoadLastN")
 	}
 	ts, cdp := results[0].Unpack()
-	return T(*cdp), time.UnixMilli(ts), nil
+	switch q.field {
+	case CdpPrice:
+		return T(cdp.Price), time.UnixMilli(ts), nil
+	case CdpInStock:
+		return T(ezgo.If(cdp.InStock, 1.0, 0.0)), time.UnixMilli(ts), nil
+	default:
+		return 0, time.UnixMilli(0), fmt.Errorf("unknown cpd field: %d", q.field)
+	}
 }

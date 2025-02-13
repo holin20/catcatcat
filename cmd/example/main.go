@@ -62,7 +62,7 @@ func testEntCdpQuery() {
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
 
-	cdp, _, err := monitor.NewEntCdpQuery(db, "1").Query(context.Background(), time.Now())
+	cdp, _, err := monitor.NewEntCdpQuery(db, "0", monitor.CdpInStock).Query(context.Background(), time.Now())
 	ezgo.AssertNoError(err, "NewEntCdpQuery")
 	fmt.Println(ezgo.ToJsonString(cdp))
 }
