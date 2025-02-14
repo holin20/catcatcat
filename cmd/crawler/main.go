@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/holin20/catcatcat/internal/crawler"
-	"github.com/holin20/catcatcat/internal/example"
 	"github.com/holin20/catcatcat/pkg/ezgo"
 )
 
@@ -16,7 +15,7 @@ func main() {
 	ctx := context.Background()
 
 	crawler := crawler.NewCrawler(scope).
-		WithCrawlList(example.CRAWL_LIST).
+		WithCrawlListFromDB().
 		WithCrawlInterval(1 * time.Hour)
 
 	crawler.Kickoff(ctx)

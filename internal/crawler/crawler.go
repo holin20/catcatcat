@@ -9,7 +9,6 @@ import (
 
 	"github.com/holin20/catcatcat/internal/ent/schema"
 	"github.com/holin20/catcatcat/internal/fetcher/costco"
-	"github.com/holin20/catcatcat/internal/model"
 	"github.com/holin20/catcatcat/pkg/ezgo"
 	"github.com/holin20/catcatcat/pkg/ezgo/orm"
 	"go.uber.org/zap"
@@ -20,13 +19,15 @@ const (
 )
 
 var (
-	cdpSchema = orm.NewSchema[schema.Cdp]()
+	cdpSchema           = orm.NewSchema[schema.Cdp]()
+	catSchema           = orm.NewSchema[schema.Cat]()
+	costcoFetcherSchema = orm.NewSchema[schema.CostcoFetcher]()
 )
 
 type CrawlListEntry = struct {
 	CatId  string
-	Cat    *model.Cat
-	Costco *model.CostcoFetcher
+	Cat    *schema.Cat
+	Costco *schema.CostcoFetcher
 }
 
 type Crawler struct {
@@ -49,8 +50,47 @@ func NewCrawler(scope *ezgo.Scope) *Crawler {
 	}
 }
 
-func (c *Crawler) WithCrawlList(crawlList []CrawlListEntry) *Crawler {
-	c.crawlList = crawlList
+func (c *Crawler) WithCrawlListFromDB() *Crawler {
+	cats, err := orm.Load(c.db, catSchema)
+	ezgo.AssertNoErrorf(err, "load cat schema")
+	c.scope.GetLogger().Info("Cats created", zap.Int("count", len(cats)))
+
+	costcoFetchers, err := orm.Load(c.db, costcoFetcherSchema)
+	ezgo.AssertNoErrorf(err, "load costco fetcher schema")
+	c.scope.GetLogger().Info("Costco fetchers created", zap.Int("count", len(costcoFetchers)))
+
+	for _, cat := range cats {
+		// Find costco fetcher for this cat
+		var f *schema.CostcoFetcher
+		for _, cf := range costcoFetchers {
+			if cat.CatId == cf.CatId {
+				f = cf
+				break
+			}
+		}
+		if f == nil {
+			c.scope.GetLogger().Error(
+				"Cat id has no fetcher",
+				zap.String("cat_id", cat.CatId),
+				zap.String("cat_name", cat.Name),
+			)
+			continue
+		}
+
+		entry := CrawlListEntry{
+			CatId:  cat.CatId,
+			Cat:    cat,
+			Costco: f,
+		}
+		c.crawlList = append(c.crawlList, entry)
+
+		c.scope.GetLogger().Info(
+			"Crawl list is created",
+			zap.String("cat_id", entry.CatId),
+			zap.String("cat_name", entry.Cat.Name),
+		)
+	}
+
 	return c
 }
 

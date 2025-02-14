@@ -15,7 +15,7 @@ const internalTimeColName = "__ts" // unix time in milliseconds
 
 func Load[T any](db *ezgo.PostgresDB, schema *Schema[T], ids ...int64) (map[int64]*T, error) {
 	// how to avoid allocating memory here?
-	internalCols := []string{internalIdColName, internalTimeColName}
+	internalCols := []string{internalIdColName}
 	colsToSelect := append(internalCols, schema.cols...)
 	idConstraint := ""
 	if len(ids) > 0 {

@@ -52,6 +52,7 @@ var (
 
 func main() {
 	actualData()
+	//actualizeSchemas()
 }
 
 func actualizeSchemas() {
@@ -61,8 +62,8 @@ func actualizeSchemas() {
 	err = orm.Actualize(db, orm.NewSchema[schema.Cat]())
 	ezgo.AssertNoError(err, "actualize cat")
 
-	err = orm.Actualize(db, orm.NewSchema[schema.Cdp]())
-	ezgo.AssertNoError(err, "actualize cdp")
+	//err = orm.Actualize(db, orm.NewSchema[schema.Cdp]())
+	//ezgo.AssertNoError(err, "actualize cdp")
 
 	err = orm.Actualize(db, orm.NewSchema[schema.CostcoFetcher]())
 	ezgo.AssertNoError(err, "actualize CostcoFetcher")
