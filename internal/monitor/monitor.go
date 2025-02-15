@@ -26,11 +26,11 @@ type Monitor struct {
 	notifier  *Notifier
 	db        *ezgo.PostgresDB
 
-	ruleConfigs map[string]*RuleConfig
+	cdpRuleConfigs []*CdpRuleConfig
 
 	// materialized rules and alert states
-	rules       map[string]*Rule[float64]
-	alertStates map[string]*alertState
+	rules       map[int]*Rule[float64]
+	alertStates map[int]*alertState
 
 	evalInterval   time.Duration
 	notifyInterval time.Duration
@@ -44,14 +44,14 @@ func NewMonitor(scope *ezgo.Scope, db *ezgo.PostgresDB) *Monitor {
 		notifier:       NewNotifier(),
 		notifyInterval: defaultNotifyInterval,
 		evalInterval:   defaultEvalInterval,
-		alertStates:    make(map[string]*alertState),
+		alertStates:    make(map[int]*alertState),
 		db:             db,
 	}
 	return m
 }
 
-func (m *Monitor) WithRuleConfigs(ruleConfigs map[string]*RuleConfig) *Monitor {
-	m.ruleConfigs = ruleConfigs
+func (m *Monitor) WithCdpRuleConfigs(cdpRuleConfigs []*CdpRuleConfig) *Monitor {
+	m.cdpRuleConfigs = cdpRuleConfigs
 	m.buildRules()
 	return m
 }
@@ -85,17 +85,23 @@ func (m *Monitor) Kickoff(ctx context.Context) {
 }
 
 func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
-	awaitbles := ezgo.MapApplyAsync(m.rules, func(ruleId string, r *Rule[float64]) bool {
-		m.scope.GetLogger().Info("Evaluating rule", zap.String("name", r.GetName()), zap.String("rule#", ruleId))
+	awaitbles := ezgo.MapApplyAsync(m.rules, func(ruleId int, r *Rule[float64]) bool {
 		met, queryResult, queryResultTime, err := r.Eval(ctx, now)
+		m.scope.GetLogger().Info(
+			"Evaluated rule",
+			zap.String("name", r.GetName()),
+			zap.Int("rule#", ruleId),
+			zap.Float64("query_result", queryResult),
+		)
+
 		if err != nil {
 			ezgo.LogCausesf(m.scope.GetLogger(), err, "Eval")
 			return false
 		}
 		if met {
-			m.alert(r, m.ruleConfigs[ruleId], queryResult, queryResultTime, now)
+			m.alert(r, m.cdpRuleConfigs[ruleId], queryResult, queryResultTime, now)
 		} else if rs := m.alertStates[ruleId]; rs != nil && rs.alerting {
-			m.scope.GetLogger().Info("Rule no longer meets the alerting criteria", zap.String("ruleId", ruleId))
+			m.scope.GetLogger().Info("Rule no longer meets the alerting criteria", zap.Int("ruleId", ruleId))
 			rs.alerting = false // reset the alerting state.
 			// TODO - notify "alert dismissed"
 		}
@@ -110,7 +116,7 @@ func (m *Monitor) evalRules(ctx context.Context, now time.Time) error {
 
 func (m *Monitor) alert(
 	r *Rule[float64],
-	ruleConfig *RuleConfig,
+	cdpRuleConfig *CdpRuleConfig,
 	queryResult float64,
 	queryResultTime time.Time,
 	queryTime time.Time,
@@ -135,14 +141,14 @@ func (m *Monitor) alert(
 			if now.Sub(lastNotifyTime) > m.notifyInterval {
 				m.scope.GetLogger().Info(
 					"Alert notification interval passed. Alert again",
-					zap.String("rule_id", r.id),
+					zap.Int("rule_id", r.id),
 					zap.Time("last_notify_time", lastNotifyTime),
 				)
 				alertState.alerting = false
 			} else {
 				m.scope.GetLogger().Info(
 					"Inside alert notification interval. Do not notify",
-					zap.String("rule_id", r.id),
+					zap.Int("rule_id", r.id),
 					zap.Time("last_notify_time", lastNotifyTime),
 					zap.Time("next_notify_time", lastNotifyTime.Add(m.notifyInterval)),
 					zap.Duration("notify_interval", m.notifyInterval),
@@ -154,12 +160,12 @@ func (m *Monitor) alert(
 	if !alertState.alerting {
 		alertState.alerting = true
 		alertState.notifyHistory = append(alertState.notifyHistory, ezgo.Tuple2(now, queryResult))
-		m.scope.GetLogger().Info("Notify this alert!", zap.String("ruleId", r.id))
+		m.scope.GetLogger().Info("Notify this alert!", zap.Int("ruleId", r.id))
 
 		// Notify!
 		if err := m.notifier.NotifyEmail(
 			r.GetName(),
-			ruleConfig,
+			cdpRuleConfig,
 			queryTime,
 			queryResult,
 			queryResultTime,
@@ -170,18 +176,19 @@ func (m *Monitor) alert(
 }
 
 func (m *Monitor) buildRules() {
-	rules := make(map[string]*Rule[float64])
-	for i, rc := range m.ruleConfigs {
+	rules := make(map[int]*Rule[float64])
+	for i, rc := range m.cdpRuleConfigs {
 		rules[i] = &Rule[float64]{
-			id:   rc.RuleId,
+			id:   i,
 			name: rc.Name,
-			query: ezgo.Must(BuildQuery[float64](
-				rc.QueryType,
-				rc.QueryArgs...,
-			)),
+			query: NewEntCdpQuery(
+				m.db,
+				rc.CatId,
+				rc.MonitorField,
+			),
 			condition: ezgo.Must(BuildCondition[float64](
 				rc.ConditionType,
-				rc.ConditionArgs,
+				rc.ConditionArg,
 			)),
 		}
 	}

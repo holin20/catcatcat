@@ -112,7 +112,9 @@ func LoadLastN[T any](
 		Select(colsToSelect...).
 		From(schema.tableName).
 		Where(whereConstraint).
-		OrderBy(internalTimeColName). // TODO - support ascent/descent
+		OrderBy(map[string]ezgo.SqlOrderType{
+			internalTimeColName: ezgo.SqlOrderDesc,
+		}).
 		Limit(count).
 		Build()
 	if ezgo.IsErr(err) {

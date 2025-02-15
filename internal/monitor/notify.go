@@ -23,14 +23,14 @@ func NewNotifier() *Notifier {
 
 func (n *Notifier) NotifyEmail(
 	ruleName string,
-	ruleConfig *RuleConfig,
+	cdpRuleConfig *CdpRuleConfig,
 	evalTime time.Time,
 	result float64,
 	resultTime time.Time,
 ) error {
 	subject := "You've got a cat! " + ruleName
 
-	currentStatus := fmt.Sprintf(ruleConfig.QueryResultTemplate, result)
+	currentStatus := fmt.Sprintf(cdpRuleConfig.QueryResultTemplate, result)
 
 	body := fmt.Sprintf(
 		"%s was just detected to meet your watch criteria at %s (data point from %s ago)\n"+
@@ -39,7 +39,7 @@ func (n *Notifier) NotifyEmail(
 		ruleName,
 		evalTime.Format(time.RFC1123),
 		evalTime.Sub(resultTime).String(),
-		ruleConfig.AlertCriteria,
+		cdpRuleConfig.AlertCriteria,
 		currentStatus,
 	)
 

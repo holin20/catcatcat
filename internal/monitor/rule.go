@@ -8,7 +8,7 @@ import (
 )
 
 type Rule[V any] struct {
-	id        string
+	id        int
 	name      string
 	query     Queryable[V]
 	condition Condition[V]

@@ -1,14 +1,13 @@
 package monitor
 
-type RuleConfig struct {
+type CdpRuleConfig struct {
 	RuleId        string
 	Name          string
-	QueryType     QueryType
-	QueryArgs     []any
+	CatId         string
+	MonitorField  CdpField
 	ConditionType ConditionType
-	ConditionArgs float64
+	ConditionArg  float64
 
-	// for notification content
 	AlertCriteria       string
-	QueryResultTemplate string // result will be provided as %f
+	QueryResultTemplate string
 }

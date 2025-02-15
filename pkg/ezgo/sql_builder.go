@@ -29,6 +29,13 @@ const (
 	PostgresqlTypeBool   PostgresqlNativeType = "BOOL"
 )
 
+type SqlOrderType string
+
+const (
+	SqlOrderAsc  SqlOrderType = "ASC"
+	SqlOrderDesc SqlOrderType = "DESC"
+)
+
 //
 
 type sqlColType uint8
@@ -99,7 +106,7 @@ type SqlBuilder struct {
 	from            string
 	constraint      string
 	groupByFields   Set[string]
-	orderByFields   Set[string]
+	orderByFields   map[string]SqlOrderType
 	limit           int
 }
 
@@ -108,7 +115,7 @@ func NewSqlBuilder() *SqlBuilder {
 		selectFields:    MakeSet[string](),
 		aggregateFields: make(map[string]SqlAggregateType),
 		groupByFields:   MakeSet[string](),
-		orderByFields:   MakeSet[string](),
+		orderByFields:   make(map[string]SqlOrderType),
 	}
 }
 
@@ -137,8 +144,8 @@ func (sb *SqlBuilder) GroupBy(fields ...string) *SqlBuilder {
 	return sb
 }
 
-func (sb *SqlBuilder) OrderBy(fields ...string) *SqlBuilder {
-	sb.orderByFields.Add(fields...)
+func (sb *SqlBuilder) OrderBy(orderByFields map[string]SqlOrderType) *SqlBuilder {
+	sb.orderByFields = orderByFields
 	return sb
 }
 
@@ -165,10 +172,17 @@ func (sb *SqlBuilder) Build() (string, error) {
 	groupByClause := If(!sb.groupByFields.Empty(), "GROUP BY "+strings.Join(sb.groupByFields.ToSlice(), ", "), "")
 
 	// order by
-	if !sb.orderByFields.CoveredBy(sb.selectFields) {
-		return "", fmt.Errorf("some order-by fields do not exist in select: %s", sb.orderByFields.Substract(sb.selectFields).ToSlice())
+	// if !sb.orderByFields.CoveredBy(sb.selectFields) {
+	// 	return "", fmt.Errorf("some order-by fields do not exist in select: %s", sb.orderByFields.Substract(sb.selectFields).ToSlice())
+	// }
+	var orderByClause string
+	if len(sb.orderByFields) > 0 {
+		var orderByClauseParts []string
+		for field, order := range sb.orderByFields {
+			orderByClauseParts = append(orderByClauseParts, field+" "+string(order))
+		}
+		orderByClause = "ORDER BY " + strings.Join(orderByClauseParts, ", ")
 	}
-	orderByClause := If(!sb.orderByFields.Empty(), "ORDER BY "+strings.Join(sb.orderByFields.ToSlice(), ", "), "")
 
 	// limit
 	limitClause := ""

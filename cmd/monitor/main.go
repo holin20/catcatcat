@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/holin20/catcatcat/internal/example"
 	"github.com/holin20/catcatcat/internal/monitor"
 	"github.com/holin20/catcatcat/pkg/ezgo"
 )
@@ -19,44 +18,56 @@ func main() {
 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
 	defer db.Close()
 
-	var ruleConfigs = map[string]*monitor.RuleConfig{
-		"0": {
-			RuleId:        "0",
-			Name:          example.CATS[0].Name,
-			QueryType:     monitor.EntCdp,
-			QueryArgs:     []any{db, "0", monitor.CdpPrice},
-			ConditionType: monitor.LessCondition,
-			ConditionArgs: 1100.0,
-
-			AlertCriteria:       "price < $1100.0",
+	var cdpRuleConfig = []*monitor.CdpRuleConfig{
+		{
+			Name:                "Macbook air 13 price\"",
+			CatId:               "0",
+			MonitorField:        monitor.CdpPrice,
+			ConditionType:       monitor.LessCondition,
+			ConditionArg:        1100.0,
+			AlertCriteria:       "price < $1100",
 			QueryResultTemplate: "current price is $%f",
 		},
-		"1": {
-			RuleId:        "1",
-			Name:          example.CATS[1].Name,
-			QueryType:     monitor.EntCdp,
-			QueryArgs:     []any{db, "1", monitor.CdpInStock},
-			ConditionType: monitor.EqualCondition,
-			ConditionArgs: 1,
-
+		{
+			Name:                "Macbook air 13 availability\"",
+			CatId:               "0",
+			MonitorField:        monitor.CdpInStock,
+			ConditionType:       monitor.EqualCondition,
+			ConditionArg:        1.0,
+			AlertCriteria:       "in stock",
+			QueryResultTemplate: "current in-stock $%f",
+		},
+		{
+			Name:                "Pretty face availability",
+			CatId:               "1",
+			MonitorField:        monitor.CdpInStock,
+			ConditionType:       monitor.EqualCondition,
+			ConditionArg:        1.0,
 			AlertCriteria:       "in stock",
 			QueryResultTemplate: "in-stock status: %f",
 		},
-		"2": {
-			RuleId:        "2",
-			Name:          example.CATS[2].Name,
-			QueryType:     monitor.EntCdp,
-			QueryArgs:     []any{db, "2", monitor.CdpPrice},
-			ConditionType: monitor.LessCondition,
-			ConditionArgs: 1000,
-
+		{
+			Name:                "Macbook pro 14 price\"",
+			CatId:               "2",
+			MonitorField:        monitor.CdpPrice,
+			ConditionType:       monitor.LessCondition,
+			ConditionArg:        1000.0,
 			AlertCriteria:       "price < $1000",
 			QueryResultTemplate: "current price is $%f",
+		},
+		{
+			Name:                "Macbook pro 14 availability\"",
+			CatId:               "2",
+			MonitorField:        monitor.CdpInStock,
+			ConditionType:       monitor.EqualCondition,
+			ConditionArg:        1.0,
+			AlertCriteria:       "in stock",
+			QueryResultTemplate: "in-stock $%f",
 		},
 	}
 
 	monitor := monitor.NewMonitor(scope, db).
-		WithRuleConfigs(ruleConfigs).
+		WithCdpRuleConfigs(cdpRuleConfig).
 		WithEvalInterval(5 * time.Minute)
 
 	monitor.Kickoff(ctx)
