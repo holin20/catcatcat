@@ -2,9 +2,15 @@ syntax = "proto3";
 
 package catcatcat;
 
+import "google/api/annotations.proto";
+
 // The catcatcat service definition
 service Catcatcat {
-  rpc ListCats (ListCatsRequest) returns (ListCatsResponse) {}
+  rpc ListCats (ListCatsRequest) returns (ListCatsResponse) {
+    option (google.api.http) = {
+      get: "/cats"
+    };
+  }
 }
 
 // The request message to list all cats
