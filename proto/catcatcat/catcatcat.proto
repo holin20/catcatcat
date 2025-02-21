@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package catcatcat;
+
+// The catcatcat service definition
+service Catcatcat {
+  rpc ListCats (ListCatsRequest) returns (ListCatsResponse) {}
+}
+
+// The request message to list all cats
+message ListCatsRequest {
+}
+
+message Cat {
+  string catId = 1;
+  string name = 2;
+  string fetcher = 3;
+}
+
+// The response message to list all cats
+message ListCatsResponse {
+  repeated Cat cats = 1;
+}
