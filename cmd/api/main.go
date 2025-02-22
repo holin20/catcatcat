@@ -10,30 +10,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	"github.com/holin20/catcatcat/internal/api"
 	catcatcatpb "github.com/holin20/catcatcat/proto/catcatcat"
 )
-
-type server struct {
-	catcatcatpb.UnimplementedCatcatcatServer
-}
-
-func NewServer() *server {
-	return &server{}
-}
-
-func (s *server) ListCats(
-	ctx context.Context,
-	in *catcatcatpb.ListCatsRequest,
-) (*catcatcatpb.ListCatsResponse, error) {
-	return &catcatcatpb.ListCatsResponse{
-		Cats: []*catcatcatpb.Cat{
-			{
-				CatId: "1",
-				Name:  "lalala",
-			},
-		},
-	}, nil
-}
 
 func main() {
 	// Create a listener on TCP port
@@ -45,7 +24,7 @@ func main() {
 	// Create a gRPC server object
 	s := grpc.NewServer()
 	// Attach the Greeter service to the server
-	catcatcatpb.RegisterCatcatcatServer(s, &server{})
+	catcatcatpb.RegisterCatcatcatServer(s, api.NewGrpcServer())
 	// Serve gRPC server
 	log.Println("Serving gRPC on 0.0.0.0:8080")
 	go func() {

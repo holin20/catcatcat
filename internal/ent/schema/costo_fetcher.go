@@ -1,5 +1,9 @@
 package schema
 
+import "github.com/holin20/catcatcat/pkg/ezgo/orm"
+
+var CostcoFetcherSchema = orm.NewSchema[CostcoFetcher]()
+
 type CostcoFetcher struct {
 	CatId string `sql:"cat_id" unique:"true"`
 

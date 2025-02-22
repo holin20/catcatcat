@@ -11,19 +11,45 @@ service Catcatcat {
       get: "/cats"
     };
   }
-}
 
-// The request message to list all cats
-message ListCatsRequest {
+  rpc GetCdps (GetCdpsRequest) returns (GetCdpsResponse) {
+    option (google.api.http) = {
+      get: "/cdps/{cat_id}"
+    };
+  }
 }
 
 message Cat {
-  string catId = 1;
+  string cat_id = 1;
   string name = 2;
   string fetcher = 3;
 }
 
-// The response message to list all cats
+message Cdp {
+  int64 ts = 1; // unix time in millisecond
+  double price = 2;
+  bool in_stock = 3;
+}
+
+// ListCats
+
+message ListCatsRequest {
+}
+
 message ListCatsResponse {
   repeated Cat cats = 1;
+}
+
+// GetCdps
+
+message GetCdpsRequest {
+  string cat_id = 1;
+
+  // Below is optional
+  int64 last_n = 2;
+}
+
+message GetCdpsResponse {
+  Cat cat = 1;
+  repeated Cdp cdps = 2;
 }

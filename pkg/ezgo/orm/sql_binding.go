@@ -13,6 +13,7 @@ import (
 const internalIdColName = "__id"
 const internalTimeColName = "__ts" // unix time in milliseconds
 
+// Load returns id->ent map
 func Load[T any](db *ezgo.PostgresDB, schema *Schema[T], ids ...int64) (map[int64]*T, error) {
 	// how to avoid allocating memory here?
 	internalCols := []string{internalIdColName}

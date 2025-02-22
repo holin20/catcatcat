@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Catcatcat_ListCats_FullMethodName = "/catcatcat.Catcatcat/ListCats"
+	Catcatcat_GetCdps_FullMethodName  = "/catcatcat.Catcatcat/GetCdps"
 )
 
 // CatcatcatClient is the client API for Catcatcat service.
@@ -29,6 +30,7 @@ const (
 // The catcatcat service definition
 type CatcatcatClient interface {
 	ListCats(ctx context.Context, in *ListCatsRequest, opts ...grpc.CallOption) (*ListCatsResponse, error)
+	GetCdps(ctx context.Context, in *GetCdpsRequest, opts ...grpc.CallOption) (*GetCdpsResponse, error)
 }
 
 type catcatcatClient struct {
@@ -49,6 +51,16 @@ func (c *catcatcatClient) ListCats(ctx context.Context, in *ListCatsRequest, opt
 	return out, nil
 }
 
+func (c *catcatcatClient) GetCdps(ctx context.Context, in *GetCdpsRequest, opts ...grpc.CallOption) (*GetCdpsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCdpsResponse)
+	err := c.cc.Invoke(ctx, Catcatcat_GetCdps_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CatcatcatServer is the server API for Catcatcat service.
 // All implementations should embed UnimplementedCatcatcatServer
 // for forward compatibility.
@@ -56,6 +68,7 @@ func (c *catcatcatClient) ListCats(ctx context.Context, in *ListCatsRequest, opt
 // The catcatcat service definition
 type CatcatcatServer interface {
 	ListCats(context.Context, *ListCatsRequest) (*ListCatsResponse, error)
+	GetCdps(context.Context, *GetCdpsRequest) (*GetCdpsResponse, error)
 }
 
 // UnimplementedCatcatcatServer should be embedded to have
@@ -67,6 +80,9 @@ type UnimplementedCatcatcatServer struct{}
 
 func (UnimplementedCatcatcatServer) ListCats(context.Context, *ListCatsRequest) (*ListCatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListCats not implemented")
+}
+func (UnimplementedCatcatcatServer) GetCdps(context.Context, *GetCdpsRequest) (*GetCdpsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCdps not implemented")
 }
 func (UnimplementedCatcatcatServer) testEmbeddedByValue() {}
 
@@ -106,6 +122,24 @@ func _Catcatcat_ListCats_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Catcatcat_GetCdps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCdpsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CatcatcatServer).GetCdps(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Catcatcat_GetCdps_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CatcatcatServer).GetCdps(ctx, req.(*GetCdpsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Catcatcat_ServiceDesc is the grpc.ServiceDesc for Catcatcat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -116,6 +150,10 @@ var Catcatcat_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListCats",
 			Handler:    _Catcatcat_ListCats_Handler,
+		},
+		{
+			MethodName: "GetCdps",
+			Handler:    _Catcatcat_GetCdps_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

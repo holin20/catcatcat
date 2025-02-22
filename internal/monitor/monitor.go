@@ -186,7 +186,7 @@ func (m *Monitor) buildRules() {
 				rc.CatId,
 				rc.MonitorField,
 			),
-			condition: ezgo.Must(BuildCondition[float64](
+			condition: ezgo.Must(BuildCondition(
 				rc.ConditionType,
 				rc.ConditionArg,
 			)),
