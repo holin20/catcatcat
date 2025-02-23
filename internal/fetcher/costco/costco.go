@@ -1,6 +1,7 @@
 package costco
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -17,32 +18,54 @@ type ItemModel struct {
 	Price      float64
 }
 
-func FetchItem(httpClient *ezgo.HttpClient, inventroyUrl, priceUrl string) (float64, bool, error) {
+func FetchItemModel(
+	scope *ezgo.Scope,
+	httpClient *ezgo.HttpClient,
+	name string,
+	itemId string,
+	categoryId string,
+	productId string,
+	queryStringPatch string,
+) (*ItemModel, error) {
+	scope = scope.WithLogger(scope.GetLogger().Named("CostcoFetcher"))
+
+	priceUrl := buildGetContractPriceUrl(itemId, categoryId, productId, queryStringPatch)
+	scope.GetLogger().Info("GetContractPriceUrl", zap.String("priceUrl", priceUrl), zap.String("name", name))
+
+	inventroyUrl := builGetInventoryDetailUrl(itemId, categoryId, productId, queryStringPatch)
+	scope.GetLogger().Info("GetInventoryDetailUrl", zap.String("inventroyUrl", inventroyUrl), zap.String("name", name))
+
 	priceArgs, invArgs := ezgo.Await2(
-		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathes, httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})),
-		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathes, httpClient, inventroyUrl, []string{"invAvailable"})),
+		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathesWithRetry, httpClient, priceUrl, []string{"finalOnlinePrice", "discount"})),
+		ezgo.Async2(ezgo.Bind3_2(fetchJsonPathesWithRetry, httpClient, inventroyUrl, []string{"invAvailable"})),
 	)
 
-	priceResult, priceErr := priceArgs.Unpack()
-	hasInvResult, invErr := invArgs.Unpack()
-
-	var price float64
-	var hasInv bool
-	if priceResult != nil {
-		price = priceResult[0].Float() - priceResult[1].Float()
+	priceResult, err := priceArgs.Unpack()
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "fetchJsonPath.finalOnlinePrice."+priceUrl)
 	}
-	if hasInvResult != nil {
-		hasInv = hasInvResult[0].Bool()
+	if len(priceResult) != 2 {
+		return nil, fmt.Errorf("not enough price result count: %d", len(priceResult))
 	}
 
-	return price, hasInv, ezgo.If(
-		ezgo.IsErr(priceErr) && ezgo.IsErr(invErr),
-		ezgo.NewCause(priceErr, "fetchJsonPath.finalOnlinePrice"),
-		nil,
-	)
+	hasInvResult, err := invArgs.Unpack()
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "fetchJsonPath.invAvailable."+inventroyUrl)
+	}
+	if len(hasInvResult) != 1 {
+		return nil, fmt.Errorf("not enough inventory result count: %d", len(hasInvResult))
+	}
+
+	return &ItemModel{
+		ItemId:     itemId,
+		CategoryId: categoryId,
+		ProductId:  productId,
+		Price:      priceResult[0].Float() - priceResult[1].Float(),
+		Available:  hasInvResult[0].Bool(),
+	}, nil
 }
 
-func FetchItemModel(
+func FetchItemModelSequential(
 	scope *ezgo.Scope,
 	httpClient *ezgo.HttpClient,
 	name string,
