@@ -14,10 +14,11 @@ import (
 func main() {
 	//ormCreateTest()
 	//ormLoadTest()
+	testTableExists()
 
 	//testLoadLastN()
 
-	testEntCdpQuery()
+	//testEntCdpQuery()
 
 	//	PostgresSqlQueryTest()
 	// err := ezgo.GmailSender().
@@ -55,6 +56,16 @@ func main() {
 	// ezgo.AssertNoError(err, "db query: "+sql)
 	// fmt.Println(colNames)
 	// fmt.Println(resultSets)
+}
+
+func testTableExists() {
+	// db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+	// ezgo.AssertNoError(err, "NewLocalPostgresDB")
+	// defer db.Close()
+
+	// exists, err := orm.TableExists(db, "cdp")
+	// ezgo.AssertNoError(err, "TableExists")
+	// fmt.Printf("exist: %d\n", ezgo.If(exists, 1, 0))
 }
 
 func testEntCdpQuery() {

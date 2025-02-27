@@ -154,6 +154,14 @@ func LoadLastN[T any](
 }
 
 func Actualize[T any](db *ezgo.PostgresDB, schema *Schema[T]) error {
+	tableExisted, err := tableExists(db, schema.tableName)
+	if ezgo.IsErr(err) {
+		return ezgo.NewCausef(err, "tableExists: %s", schema.tableName)
+	}
+	if tableExisted {
+		return alterSchema(db, schema)
+	}
+
 	createTableLines := make([]string, len(schema.fields))
 	for i, fieldName := range schema.fields {
 		psqlType, err := goTypeKindToPostgresqlType(schema.fieldProperty[fieldName].goType)
@@ -184,12 +192,26 @@ CREATE TABLE %s (
 		strings.Join(createTableLines, ",\n"),
 	)
 
-	_, err := db.Exec(createTableSql)
+	_, err = db.Exec(createTableSql)
 	if ezgo.IsErr(err) {
 		return ezgo.NewCause(err, createTableSql)
 	}
 
 	return nil
+}
+
+func alterSchema[T any](db *ezgo.PostgresDB, schema *Schema[T]) error {
+	return fmt.Errorf("alterSchema unimplemented")
+}
+
+func tableExists(db *ezgo.PostgresDB, tableName string) (bool, error) {
+	_, rows, err := db.Query(
+		fmt.Sprintf(`SELECT count(*) FROM information_schema.tables where table_name = '%s'`, tableName),
+	)
+	if ezgo.IsErr(err) {
+		return false, ezgo.NewCause(err, "db.Query")
+	}
+	return rows[0][0].(int64) == 1, nil
 }
 
 func Create[T any](db *ezgo.PostgresDB, schema *Schema[T], v *T) error {
