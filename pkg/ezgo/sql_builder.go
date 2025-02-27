@@ -98,8 +98,6 @@ func (scs *SqlCol) String() string {
 	return ""
 }
 
-//
-
 type SqlBuilder struct {
 	selectFields    Set[string]
 	aggregateFields map[string]SqlAggregateType

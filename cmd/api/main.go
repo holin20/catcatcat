@@ -49,7 +49,7 @@ func main() {
 	}
 
 	gwServer := &http.Server{
-		Addr:    ":8090",
+		Addr:    "0.0.0.0:8090",
 		Handler: gwmux,
 	}
 

@@ -33,6 +33,8 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [],
 
+	"appPort": ["8090:8090"],
+
 	// Uncomment the next line to run commands after the container is created.
 	"postCreateCommand": "apt-get update && apt-get install -y vim && apt-get install -y jq"
 
