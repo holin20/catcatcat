@@ -117,7 +117,9 @@ func (c *Crawler) Kickoff(ctx context.Context) {
 	}
 	c.scheduler.Repeat(ctx, c.crawInterval, "Crawler Single Fetcher", func() {
 		for i, entry := range c.crawlList {
-			itemModel, err := costco.FetchItemModel(
+			// parallel version has potential concurrent map read/write because
+			// the 2 json fetch share the same ezgo http wrapper.
+			itemModel, err := costco.FetchItemModelSequential(
 				c.scope,
 				ezgo.NewHttpClientWithCustomClient(goHttpClient, true),
 				entry.Cat.Name,

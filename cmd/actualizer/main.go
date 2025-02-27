@@ -12,40 +12,52 @@ var (
 			CatId: "0",
 			Name:  "Macbook Air M3 15\" 16G 256GB",
 		},
+		// {
+		// 	CatId: "1",
+		// 	Name:  "CurrentBody Skin LED Mask Face And Neck Kit",
+		// },
+		// {
+		// 	CatId: "2",
+		// 	Name:  `MacBook Pro Laptop (14-inch) - Apple M3 Pro Chip, 11-core CPU, 14-core GPU, 18GB Memory, 512GB SSD Storage`,
+		// },
 		{
-			CatId: "1",
-			Name:  "CurrentBody Skin LED Mask Face And Neck Kit",
-		},
-		{
-			CatId: "2",
-			Name:  `MacBook Pro Laptop (14-inch) - Apple M3 Pro Chip, 11-core CPU, 14-core GPU, 18GB Memory, 512GB SSD Storage`,
+			CatId: "3",
+			Name:  `MacBook Pro Laptop (14-inch) - Apple M4 chip, Built for Apple Intelligence, 10-core CPU, 10-core GPU, 16GB Memory, 512GB SSD Storage`,
 		},
 	}
 
 	COSTCO_FETCHER_LIST = []*schema.CostcoFetcher{
 		{
 			CatId:      "0",
-			ItemId:     "3074457345620577642",
+			ItemId:     "3074457345620581697",
 			ProductId:  "3074457345620577640",
 			CategoryId: "10701",
 
-			QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=1-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
+			QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=747-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
 		},
+		// {
+		// 	CatId:      "1",
+		// 	ItemId:     "3074457345620439817",
+		// 	ProductId:  "3074457345620439815",
+		// 	CategoryId: "10701",
+
+		// 	QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=1-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
+		// },
+		// {
+		// 	CatId:      "2",
+		// 	ItemId:     "3074457345620221936",
+		// 	ProductId:  "3074457345620223430",
+		// 	CategoryId: "10701",
+
+		// 	QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=1-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
+		// },
 		{
-			CatId:      "1",
-			ItemId:     "3074457345620439817",
-			ProductId:  "3074457345620439815",
+			CatId:      "3",
+			ItemId:     "3074457345620332605",
+			ProductId:  "3074457345620332603",
 			CategoryId: "10701",
 
-			QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=1-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
-		},
-		{
-			CatId:      "2",
-			ItemId:     "3074457345620221936",
-			ProductId:  "3074457345620223430",
-			CategoryId: "10701",
-
-			QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=1-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
+			QueryStringPatch: "WH=1250-3pl%2C1321-wm%2C1456-3pl%2C283-wm%2C561-wm%2C725-wm%2C731-wm%2C758-wm%2C759-wm%2C847_0-cor%2C847_0-cwt%2C847_0-edi%2C847_0-ehs%2C847_0-membership%2C847_0-mpt%2C847_0-spc%2C847_0-wm%2C847_1-cwt%2C847_1-edi%2C847_d-fis%2C847_lg_n1f-edi%2C847_NA-cor%2C847_NA-pharmacy%2C847_NA-wm%2C847_ss_u362-edi%2C847_wp_r458-edi%2C951-wm%2C952-wm%2C9847-wcs%2C115-bd&warehouse=747-wh&isFrozenItem=false&isRegionalPdt=false&isBundleItem=false",
 		},
 	}
 )
@@ -80,6 +92,6 @@ func actualData() {
 
 	for _, fetcher := range COSTCO_FETCHER_LIST {
 		err := orm.Create(db, orm.NewSchema[schema.CostcoFetcher](), fetcher)
-		ezgo.AssertNoError(err, "creating cat")
+		ezgo.AssertNoError(err, "creating costco fetcher")
 	}
 }

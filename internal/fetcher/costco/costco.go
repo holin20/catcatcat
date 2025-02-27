@@ -153,7 +153,7 @@ func buildGetContractPriceUrl(
 		WithQueryParam("itemId", itemId).
 		WithQueryParam("catalogId", catalogId).
 		WithQueryParam("productId", productId).
-		WithQueryStringPatch(queryStringPatch).
+		//		WithQueryStringPatch(queryStringPatch). // somehow price api can't have the patch
 		String()
 }
 
