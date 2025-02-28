@@ -14,7 +14,6 @@ import (
 func main() {
 	//ormCreateTest()
 	//ormLoadTest()
-	testTableExists()
 
 	//testLoadLastN()
 
@@ -67,6 +66,25 @@ func testTableExists() {
 	// ezgo.AssertNoError(err, "TableExists")
 	// fmt.Printf("exist: %d\n", ezgo.If(exists, 1, 0))
 }
+
+// func testAlterSchema() {
+// 	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+// 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+// 	defer db.Close()
+
+// 	err = orm.alterSchema(db, schema.CostcoFetcherSchema)
+// 	ezgo.AssertNoError(err, "GetTableColumns")
+// }
+
+// func testGetTableColumns() {
+// 	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")
+// 	ezgo.AssertNoError(err, "NewLocalPostgresDB")
+// 	defer db.Close()
+
+// 	colNameToType, err := orm.getTableColumns(db, "cdp")
+// 	ezgo.AssertNoError(err, "GetTableColumns")
+// 	fmt.Println(ezgo.ToJsonString(colNameToType))
+// }
 
 func testEntCdpQuery() {
 	db, err := ezgo.NewLocalPostgresDB("postgres", "postgres", 54320, "postgres")

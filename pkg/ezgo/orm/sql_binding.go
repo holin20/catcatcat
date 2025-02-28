@@ -201,7 +201,78 @@ CREATE TABLE %s (
 }
 
 func alterSchema[T any](db *ezgo.PostgresDB, schema *Schema[T]) error {
-	return fmt.Errorf("alterSchema unimplemented")
+	existingColToType, err := getTableColumns(db, schema.tableName)
+	if ezgo.IsErr(err) {
+		return ezgo.NewCause(err, "getTableColumns")
+	}
+
+	// check if all existing column is covered by new schema. Deletion is not supported.
+	newSchemaCols := ezgo.MakeSet(schema.cols...)
+	for existingCol := range existingColToType {
+		if existingCol == internalIdColName ||
+			existingCol == internalTimeColName {
+			continue
+		}
+		if !newSchemaCols.Has(existingCol) {
+			return fmt.Errorf("field deletion is not supported: %s", existingCol)
+		}
+	}
+
+	// find new columns in newSchemaCols
+
+	// Example
+	// ALTER TABLE employees
+	// ADD COLUMN salary INTEGER,
+	// ADD COLUMN department TEXT;
+
+	var alterLines []string
+	for _, fieldName := range schema.fields {
+		newColName := schema.fieldProperty[fieldName].sqlColName
+		if _, found := existingColToType[newColName]; found {
+			continue
+		}
+		psqlType, err := goTypeKindToPostgresqlType(schema.fieldProperty[fieldName].goType)
+		if ezgo.IsErr(err) {
+			return ezgo.NewCausef(err, "goTypeKindToPostgresqlType")
+		}
+
+		alterLines = append(alterLines, fmt.Sprintf("ADD COLUMN %s %s", newColName, psqlType))
+	}
+
+	if len(alterLines) == 0 {
+		return nil // no schema change
+	}
+
+	alterTableSql := fmt.Sprintf(
+		`
+ALTER TABLE %s
+%s
+`,
+		schema.tableName,
+		strings.Join(alterLines, ",\n"),
+	)
+
+	_, err = db.Exec(alterTableSql)
+	if ezgo.IsErr(err) {
+		return ezgo.NewCause(err, alterTableSql)
+	}
+
+	return nil
+}
+
+func getTableColumns(db *ezgo.PostgresDB, tableName string) (map[string]ezgo.PostgresqlNativeType, error) {
+	_, rows, err := db.Query(
+		fmt.Sprintf(`SELECT column_name, udt_name FROM information_schema.columns WHERE table_name = '%s'`, tableName),
+	)
+	if ezgo.IsErr(err) {
+		return nil, ezgo.NewCause(err, "db.Query")
+	}
+	columnNameToType := make(map[string]ezgo.PostgresqlNativeType)
+	for _, row := range rows {
+		colName, colType := string(row[0].([]uint8)), strings.ToUpper(string(row[1].([]uint8)))
+		columnNameToType[colName] = ezgo.PostgresqlNativeType(colType)
+	}
+	return columnNameToType, nil
 }
 
 func tableExists(db *ezgo.PostgresDB, tableName string) (bool, error) {
@@ -241,22 +312,22 @@ func Create[T any](db *ezgo.PostgresDB, schema *Schema[T], v *T) error {
 	return db.Insert(schema.tableName, sqlCols)
 }
 
-func goTypeKindToPostgresqlType(kind reflect.Kind) (string, error) {
+func goTypeKindToPostgresqlType(kind reflect.Kind) (ezgo.PostgresqlNativeType, error) {
 	switch kind {
 	case reflect.Bool:
-		return "BOOL", nil
+		return ezgo.PostgresqlTypeBool, nil
 	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Uint8, reflect.Uint16:
-		return "INT4", nil
+		return ezgo.PostgresqlTypeInt4, nil
 	case reflect.Int, reflect.Uint32, reflect.Int64:
-		return "INT8", nil
+		return ezgo.PostgresqlTypeInt8, nil
 	case reflect.Uint, reflect.Uint64:
 		return "", fmt.Errorf("Uint/Uint64 is not supported. Use int64 instead")
 	case reflect.Float32:
-		return "FLOAT4", nil
+		return ezgo.PostgresqlTypeFloat4, nil
 	case reflect.Float64:
-		return "FLOAT8", nil
+		return ezgo.PostgresqlTypeFloat8, nil
 	case reflect.String:
-		return "TEXT", nil
+		return ezgo.PostgresqlTypeText, nil
 	default:
 		return "", fmt.Errorf("unsupported golang type: %s", kind.String())
 	}

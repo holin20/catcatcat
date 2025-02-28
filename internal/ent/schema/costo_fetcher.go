@@ -12,4 +12,6 @@ type CostcoFetcher struct {
 	CategoryId string `sql:"category_id"`
 
 	QueryStringPatch string `sql:"query_string_patch"`
+
+	Disabled bool `sql:"disabled"`
 }
