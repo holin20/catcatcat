@@ -76,6 +76,14 @@ func (c *Crawler) WithCrawlListFromDB() *Crawler {
 			)
 			continue
 		}
+		if f.Disabled {
+			c.scope.GetLogger().Info(
+				"This fetcher is disabled",
+				zap.String("cat_id", cat.CatId),
+				zap.String("cat_name", cat.Name),
+			)
+			continue
+		}
 
 		entry := CrawlListEntry{
 			CatId:  cat.CatId,
